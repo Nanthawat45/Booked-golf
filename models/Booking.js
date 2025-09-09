@@ -12,7 +12,7 @@ const bookingSchema = new mongoose.Schema({
     players: { type: Number, min: 1, max: 4, required: true },
     groupName: { type: String, required: true },
     caddy: [{ 
-      type: mongoose.Schema.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
         }],
     totalPrice: { type: Number, required: true },
@@ -27,14 +27,14 @@ const bookingSchema = new mongoose.Schema({
     },
     golfCar: { type: Number, default: 0 }, 
     golfBag: { type: Number, default: 0 },
-    bookedGolfCartIds: [{  
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Item'
-        }],
-    bookedGolfCartIds: [{  
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Item'
-        }], 
+    // bookedGolfCartIds: [{  
+    // type: mongoose.Schema.Types.ObjectId, 
+    // ref: 'Item'
+    //     }],
+    // bookedGolfCartIds: [{  
+    // type: mongoose.Schema.Types.ObjectId, 
+    // ref: 'Item'
+    //     }], 
 }, { timestamps: true });
 
 const Booking = mongoose.model('Booking', bookingSchema);
