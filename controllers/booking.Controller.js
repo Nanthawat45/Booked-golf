@@ -94,3 +94,16 @@ export const deleteBooking = async (req, res) =>{
         res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
     }
 }
+
+export const getByIdBookings = async (req, res) => {
+    const { id } = req.user.id;
+    try{
+        const bookedById = await Map.Booking.findByPk(id);
+        if(!bookedById){
+            return res.status(404).json({message:"Booking not found"});//ไม่พบการจอง
+        }
+        res.send(bookedById);
+    } catch {
+        res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
+    }
+};
