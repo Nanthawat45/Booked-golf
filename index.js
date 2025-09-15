@@ -1,6 +1,7 @@
 import BookingRoute from './routes/booking.Routes.js';
 import UserRoute from './routes/user.Routes.js';
 import ItemRoute from './routes/item.Route.js';
+import HoleRoute from './routes/hole.Route.js';
 import mongoose from 'mongoose';
 import express from 'express';
 import cors from 'cors';
@@ -27,6 +28,7 @@ app.use(cookieParser());
 app.use("/api/booking", BookingRoute);
 app.use("/api/user", UserRoute);
 app.use("/api/item", ItemRoute);
+app.use("/api/hole", HoleRoute);
 
 app.get("/", (req, res) => {
   res.send("Backend is running PORT 5000");
