@@ -10,10 +10,10 @@ import { protect } from '../middleware/auth.Middleware.js';
 
 const router = express.Router();
 
-router.post("/book",protect, createBooking);
+router.post("/book", protect, createBooking);
 router.get("/getbook", getBookings);
 router.put("/:id", updateBooking);
 //router.patch("/:id", PATCHBooking);
 router.delete("/:id", deleteBooking);
-router.get("/getbyidbooked", getByIdBookings);
+router.get("/getbyidbooked/:id", protect, getByIdBookings);
 export default router;

@@ -38,7 +38,7 @@ export const createBooking = async (req, res) => {
             totalPrice,
             isPaid: false, // ยังไม่ชำระเงิน
             golfCar,
-            updateStatusGolfCar,
+            //updateStatusGolfCar,
             golfBag,
             status: 'Booked'
             });
@@ -96,14 +96,15 @@ export const deleteBooking = async (req, res) =>{
 }
 
 export const getByIdBookings = async (req, res) => {
-    const { id } = req.user.id;
+    const { id } = req.params;
     try{
-        const bookedById = await Map.Booking.findByPk(id);
+        const bookedById = await Booking.findById(id);
         if(!bookedById){
             return res.status(404).json({message:"Booking not found"});//ไม่พบการจอง
         }
         res.send(bookedById);
-    } catch {
+    } catch (error) {
+        console.log(error);
         res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
     }
 };

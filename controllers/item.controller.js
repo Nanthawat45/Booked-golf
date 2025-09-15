@@ -18,3 +18,55 @@ export const createItem = async (req, res) => {
         res.status(500).json({ message: "Server error" }); //เซิร์ฟเวอร์ error
     }
 }
+
+export const getByIdItem = async (req, res) => {
+    const { id } = req.params;
+    try{
+        const bookedById = await Item.findById(id);
+        if(!bookedById){
+            return res.status(404).json({message:"Booking not found"});//ไม่พบการจอง
+        }
+        res.send(bookedById);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
+    }
+};
+
+export const deleteItem = async (req, res) =>{
+    try{
+        const DItem = await Item.findById(req.params.id);
+        // console.log(DItem);
+        if(!DItem){
+            return res.status(404).json({message:"Item not found"});//ไม่พบการจอง
+        }
+        await DItem.deleteOne();
+        res.status(200).json({message:"Item deleted successfully"});//ลบการจองสำเร็จ
+    } catch {
+        res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
+    }
+}
+
+export const getItemCar = async (req, res) => {
+    try{
+        const Items = await Item.find({type:"golfCar"})
+        //.populate('Item', 'itemId type status')
+        // .populate('bookedGolfCartIds', 'name')
+        // .populate('bookedGolfBagIds', 'name')
+        res.json(Items);
+    } catch {
+        res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
+    }
+};
+
+export const getItemBag = async (req, res) => {
+    try{
+        const Items = await Item.find({type:"golfBag"})
+        //.populate('Item', 'itemId type status')
+        // .populate('bookedGolfCartIds', 'name')
+        // .populate('bookedGolfBagIds', 'name')
+        res.json(Items);
+    } catch {
+        res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
+    }
+};
