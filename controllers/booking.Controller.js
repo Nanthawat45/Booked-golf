@@ -1,5 +1,5 @@
 import Booking from "../models/Booking.js";
-import { checkItem } from "./item.controller.js";
+//import { checkItem } from "./item.controller.js";
 
 export const createBooking = async (req, res) => {
      const { 
@@ -14,19 +14,19 @@ export const createBooking = async (req, res) => {
       golfBag = 0,   
     } = req.body;
     try {
-        if(golfBag>0){
-            golfBagId = await checkItem(golfBag,"golfBag")
-        }
-        if(golfBagId.length < golfBag){
-            return res.status(400).json({message:""})
-        }
+        // if(golfBag>0){
+        //     golfBagId = await checkItem(golfBag,"golfBag")
+        // }
+        // if(golfBagId.length < golfBag){
+        //     return res.status(400).json({message:""})
+        // }
 
-        if(golfCar>0){
-            golfCarId = await checkItem(golfCar,"golfCar")
-        }
-        if(golfCarId.length < golfBag){
-            return res.status(400).json({message:""})
-        }
+        // if(golfCar>0){
+        //     golfCarId = await checkItem(golfCar,"golfCar")
+        // }
+        // if(golfCarId.length < golfBag){
+        //     return res.status(400).json({message:""})
+        // }
 
         const booking = new Booking({
             user: req.user._id,
@@ -38,8 +38,8 @@ export const createBooking = async (req, res) => {
             caddy, 
             totalPrice,
             isPaid: false, // ยังไม่ชำระเงิน
-            golfCar:golfBagId,
-            golfBag:golfCarId,
+            golfCar,
+            golfBag,
             status: 'Booked'
             });
         const savedBooking = await booking.save();
@@ -108,3 +108,15 @@ export const getByIdBookings = async (req, res) => {
         res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
     }
 };
+
+// export const updateBookingAssets = async (bookingId)=>{
+//      const booking = await Booking.findById(bookingId);
+//      if (!booking) {
+//         throw new Error('Booking not found.');
+//     }
+//     const assetIds = [booking.golfCar, booking.golfBag];
+//         await Asset.updateMany(
+//             { _id: { $in: assetIds } },
+//             { $set: { status: onGoing } }
+//         );
+// }

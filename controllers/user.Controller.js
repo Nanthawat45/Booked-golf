@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
+import Caddy from '../models/Caddy.js';
 
 export const generateToken = (userId, res) => { 
   const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
@@ -29,21 +30,29 @@ export const registerUser = async (req, res) => {
     // }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({
+    const newUser = await User.create({
       name,
       phone,
       email,
       password: hashedPassword,
       role
     });
-    if(user){
-      generateToken(user._id, res);
+    if(newUser){
+      if(role === "caddy")
+        await Caddy.create({
+                caddy_id: newUser._id, 
+                //name: newUser.name,
+                caddyStatus: 'available' // กำหนดสถานะเริ่มต้น
+            });
+    }
+    if(newUser){
+      generateToken(newUser._id, res);
       res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        phone: user.phone,
-        email: user.email,
-        role: user.role
+        _id: newUser._id,
+        name: newUser.name,
+        phone: newUser.phone,
+        email: newUser.email,
+        role: newUser.role
       });
 
     }else{
@@ -51,6 +60,7 @@ export const registerUser = async (req, res) => {
     }
     } catch (error){
       console.log("Error in registerUser:", error);// ข้อผิดพลาดในการลงทะเบียนผู้ใช้
+       return res.status(500).json({message:"Server error"})
     }
   };
 
