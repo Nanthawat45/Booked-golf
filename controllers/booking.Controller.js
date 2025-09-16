@@ -1,5 +1,5 @@
 import Booking from "../models/Booking.js";
-import Item from "../models/Item.js";
+import { checkItem } from "./item.controller.js";
 
 export const createBooking = async (req, res) => {
      const { 
@@ -14,19 +14,20 @@ export const createBooking = async (req, res) => {
       golfBag = 0,   
     } = req.body;
     try {
-    //     if(golfCar > 0){
-    //         golfCarItems = await Item.find({ 
-    //             type: 'golfCar', 
-    //             status: 'available' 
-    //         }).limit(golfCar);
-    //     if(golfCarItems.length < golfCar){
-    //         return res.status(400).json({ message: "Not enough available golf cars" });//รถกอล์ฟไม่เพียงพอ
-    //     }
-    //     const updateStatusGolfCar = await Item.updateMany(
-    //         { _id: { $in: golfCarItems } },
-    //         { $set: { status: 'booked' } }
-    //     );
-    // }
+        if(golfBag>0){
+            golfBagId = await checkItem(golfBag,"golfBag")
+        }
+        if(golfBagId.length < golfBag){
+            return res.status(400).json({message:""})
+        }
+
+        if(golfCar>0){
+            golfCarId = await checkItem(golfCar,"golfCar")
+        }
+        if(golfCarId.length < golfBag){
+            return res.status(400).json({message:""})
+        }
+
         const booking = new Booking({
             user: req.user._id,
             courseType,
@@ -37,9 +38,8 @@ export const createBooking = async (req, res) => {
             caddy, 
             totalPrice,
             isPaid: false, // ยังไม่ชำระเงิน
-            golfCar,
-            //updateStatusGolfCar,
-            golfBag,
+            golfCar:golfBagId,
+            golfBag:golfCarId,
             status: 'Booked'
             });
         const savedBooking = await booking.save();

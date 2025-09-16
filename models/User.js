@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
             enum:["user","admin","caddy","starter"],
             default:"user"
         }
-    },{timestamps:true}
+    }
 );
 
 const User = mongoose.model("User", userSchema);

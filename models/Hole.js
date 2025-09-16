@@ -7,17 +7,17 @@ const holeSchema = new mongoose.Schema({
         unique: true,
         min: 1, max: 18
     },
-    holeType: { 
-        type: String, 
-        enum: [
-            "open",
-            "close", 
-            "editing", 
-            "editing_successfully",
-            "help_car",
-            "go_help_car"
-        ]
-    },
+    // holeType: { 
+    //     type: String, 
+    //     enum: [
+    //         "open",
+    //         "close", 
+    //         "editing", 
+    //         "editing_successfully",
+    //         "help_car",
+    //         "go_help_car"
+    //     ]
+    // },
     description: { type: String },
     status:{
         type: String,
@@ -32,9 +32,9 @@ const holeSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
     },
-    editedBy:{
-        type: String,
-    }
+    // editedBy:{
+    //     type: String,
+    // }
 }, { timestamps: true });
 const Hole = mongoose.model("Hole", holeSchema);
 export default Hole;

@@ -70,3 +70,23 @@ export const getItemBag = async (req, res) => {
         res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
     }
 };
+
+export const checkItem = async (quantity,itemType)=>{
+    try{
+        if(quantity <= 0){
+            return [];
+        }
+        const items = await Item.find({
+            type: itemType,
+            status: "available"
+        }).limit(quantity);
+     const itemId = items.map(item => item.id);
+        await Item.updateMany(
+            {_id:{$in: itemId}},
+            {$set: {status: "booked"}}
+        )
+        return itemId
+    }catch{
+        res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
+    }
+}
