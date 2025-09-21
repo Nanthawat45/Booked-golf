@@ -41,7 +41,7 @@ export const registerUser = async (req, res) => {
       if(role === "caddy")
         await Caddy.create({
                 caddy_id: newUser._id, 
-                //name: newUser.name,
+                name: newUser.name,
                 caddyStatus: 'available' // กำหนดสถานะเริ่มต้น
             });
     }

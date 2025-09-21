@@ -1,5 +1,5 @@
 import Booking from "../models/Booking.js";
-//import { checkItem } from "./item.controller.js";
+import { checkItem } from "./item.controller.js";
 
 export const createBooking = async (req, res) => {
      const { 
@@ -14,19 +14,21 @@ export const createBooking = async (req, res) => {
       golfBag = 0,   
     } = req.body;
     try {
-        // if(golfBag>0){
-        //     golfBagId = await checkItem(golfBag,"golfBag")
-        // }
-        // if(golfBagId.length < golfBag){
-        //     return res.status(400).json({message:""})
-        // }
+        let golfBagId = [];
+        let golfCarId = [];
+        if(golfBag>0){
+            golfBagId = await checkItem(golfBag,"golfBag")
+        }
+        if(golfBagId.length < golfBag){
+            return res.status(400).json({message:"Not enough golf Bag available."})
+        }
 
-        // if(golfCar>0){
-        //     golfCarId = await checkItem(golfCar,"golfCar")
-        // }
-        // if(golfCarId.length < golfBag){
-        //     return res.status(400).json({message:""})
-        // }
+        if(golfCar>0){
+            golfCarId = await checkItem(golfCar,"golfCar")
+        }
+        if(golfCarId.length < golfCar){
+            return res.status(400).json({message:"Not enough golf cars available."})
+        }
 
         const booking = new Booking({
             user: req.user._id,
@@ -38,9 +40,11 @@ export const createBooking = async (req, res) => {
             caddy, 
             totalPrice,
             isPaid: false, // ยังไม่ชำระเงิน
-            golfCar,
-            golfBag,
-            status: 'Booked'
+            golfCar: golfCar, 
+            golfBag: golfBag,
+            bookedGolfCarIds: golfCarId,
+            bookedGolfBagIds: golfBagId,
+            status: 'booked'
             });
         const savedBooking = await booking.save();
         res.status(201).json(savedBooking);
@@ -120,3 +124,19 @@ export const getByIdBookings = async (req, res) => {
 //             { $set: { status: onGoing } }
 //         );
 // }
+
+export const updateBookingStatus = async (bookingId, newStatus) => {
+  try {
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { status: newStatus },
+      { new: true, runValidators: true }
+    );
+    if (!updatedBooking) {
+      throw new Error('Booking not found.');
+    }
+    return updatedBooking;
+  } catch (error) {
+    throw new Error(`Failed to update booking status: ${error.message}`);
+  }
+};

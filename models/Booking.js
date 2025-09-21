@@ -21,20 +21,20 @@ const bookingSchema = new mongoose.Schema({
     },
       status: { 
         type: String, 
-        enum: ['Booked', 'onGoing', 'completed', 'canceled'],
-        default: 'Booked', 
+        enum: ['booked', 'onGoing', 'completed', 'canceled'],
+        default: 'booked', 
         required: true
     },
     golfCar: { type: Number, default: 0 }, 
     golfBag: { type: Number, default: 0 },
-    // bookedGolfCartIds: [{  
-    // type: mongoose.Schema.Types.ObjectId, 
-    // ref: 'Item'
-    //     }],
-    // bookedGolfCartIds: [{  
-    // type: mongoose.Schema.Types.ObjectId, 
-    // ref: 'Item'
-    //     }], 
+    bookedGolfCarIds: [{  
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Item'
+        }],
+    bookedGolfBagIds: [{  
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Item'
+        }], 
 }, { timestamps: true });
 
 const Booking = mongoose.model('Booking', bookingSchema);

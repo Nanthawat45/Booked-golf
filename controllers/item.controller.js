@@ -71,35 +71,66 @@ export const getItemBag = async (req, res) => {
     }
 };
 
-// export const checkItem = async (quantity,itemType)=>{
-//     try{
-//         if(quantity <= 0){
-//             return [];
-//         }
-//         const items = await Item.find({
-//             type: itemType,
-//             status: "available"
-//         }).limit(quantity);
-//      const itemId = items.map(item => item.id);
-//         await Item.updateMany(
-//             {_id:{$in: itemId}},
-//             {$set: {status: "booked"}}
-//         )
-//         return itemId
-//     }catch{
-//         res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
-//     }
-// }
+export const checkItem = async (quantity,itemType)=>{
+    try{
+        if(quantity <= 0){
+            return [];
+        }
+        const items = await Item.find({
+            type: itemType,
+            status: "available"
+        }).limit(quantity);
+     const itemId = items.map(item => item.id);
+        await Item.updateMany(
+            {_id:{$in: itemId}},
+            {$set: {status: "booked"}}
+        )
+        return itemId
+    }catch{
+        res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
+    }
+}
 
+export const updateItemStatu = async (req, res) => {
+  const { id } = req.params; // รับค่า id ของไอเทมจาก URL
+  const { status } = req.body; // รับค่าสถานะใหม่จาก body ของ request
 
-// export const updateItem = async (req, res) => {
-//     try{
-//         await Item.updateMany(
-//         { _id:  booking.bookedGolfCartIds, status: 'booked' },
-//         { $set: { status: 'inUse' } },
-//         { session: session }
-//         )
-//     } catch {
-//         res.status(500).json({message:"Server error"});//เซิร์ฟเวอร์ error
-//     }
-// };
+  try {
+    // ใช้ findOne เพื่อหาเอกสารที่ตรงกับ id
+    const itemToUpdate = await Item.findOne({ _id: id });
+
+    // ถ้าไม่พบไอเทมที่ต้องการอัปเดต
+    if (!itemToUpdate) {
+      return res.status(404).json({ message: 'Item not found.' });
+    }
+
+    // อัปเดตเฉพาะฟิลด์ status
+    itemToUpdate.status = status;
+
+    // บันทึกการเปลี่ยนแปลง
+    const updatedItem = await itemToUpdate.save();
+
+    // ส่งข้อมูลไอเทมที่อัปเดตแล้วกลับไป
+    res.status(200).json({
+      message: 'Item status updated successfully.',
+      data: updatedItem
+    });
+
+  } catch (error) {
+    // จัดการข้อผิดพลาดที่อาจเกิดขึ้น เช่น สถานะที่ส่งมาไม่อยู่ใน enum
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateItemStatus = async (itemIds, newStatus) => {
+  try {
+    await Item.updateOne(
+      { _id: { $in: itemIds } },
+      { $set: { status: newStatus } }
+    );
+    const updatedItems = await Item.find({ _id: { $in: itemIds } });
+    return updatedItems;
+  } catch (error) {
+    throw new Error(`Failed to update item status: ${error.message}`);
+  }
+};
