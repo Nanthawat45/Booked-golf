@@ -21,7 +21,7 @@ const holeSchema = new mongoose.Schema({
     description: { type: String },
     status:{
         type: String,
-        enum: ["open", "close", "editing"],
+        enum: ["open", "close", "editing", "help_car", "go_help_car"],
         default: "open",
     },
     reportedBy:{

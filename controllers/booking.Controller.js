@@ -1,6 +1,6 @@
 import Booking from "../models/Booking.js";
 import { checkItem } from "./item.controller.js";
-
+import {updateCaddyBooking} from "./caddy.Controller.js";
 export const createBooking = async (req, res) => {
      const { 
       courseType, 
@@ -29,7 +29,7 @@ export const createBooking = async (req, res) => {
         if(golfCarId.length < golfCar){
             return res.status(400).json({message:"Not enough golf cars available."})
         }
-
+        const caddybookd = await updateCaddyBooking(caddy, 'booked');
         const booking = new Booking({
             user: req.user._id,
             courseType,
@@ -37,7 +37,7 @@ export const createBooking = async (req, res) => {
             timeSlot,
             players,
             groupName,
-            caddy, 
+            caddy: caddybookd, 
             totalPrice,
             isPaid: false, // ยังไม่ชำระเงิน
             golfCar: golfCar, 

@@ -53,8 +53,16 @@ export const updateCaddyStatus = async (caddyId, newStatus) => {
     throw new Error(`Failed to update caddy status: ${error.message}`);
   }
 };
-
-// export const updateCaddyStatusOonGoing = async (caddyId, newStatus) => {
+export const updateCaddyBooking = async (caddyId, newStatus) => {
+  try {
+    await Caddy.updateMany(
+      { caddy_id: { $in: caddyId } },
+      { $set: { caddyStatus: newStatus } }
+    );
+  } catch (error) {
+    throw new Error(`Failed to update caddy status: ${error.message}`);
+  }
+};
 //   try {
 //     await Caddy.updateOne(
 //       { caddy_id: caddyId, caddyStatus: 'onGoing' },

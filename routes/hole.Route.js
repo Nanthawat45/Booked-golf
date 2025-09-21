@@ -5,7 +5,8 @@ import {
     open,
     report,
     getHoles,
-    getByIdHoles
+    getByIdHoles,
+    reportHelpCar
 } from "../controllers/hole.Controller.js";
 import { protect } from "../middleware/auth.Middleware.js";
 
@@ -17,5 +18,6 @@ router.put("/open",protect ,open);
 router.put("/report",protect ,report);
 router.get("/gethole",protect, getHoles);
 router.get("/gethole/:id",protect, getByIdHoles);
+router.put("/help-car", protect, reportHelpCar);
 
 export default router;
