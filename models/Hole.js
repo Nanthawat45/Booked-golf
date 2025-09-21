@@ -13,7 +13,7 @@ const holeSchema = new mongoose.Schema({
     //         "open",
     //         "close", 
     //         "editing", 
-    //         "editing_successfully",
+    //         "editing_success",
     //         "help_car",
     //         "go_help_car"
     //     ]

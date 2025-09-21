@@ -91,45 +91,23 @@ export const checkItem = async (quantity,itemType)=>{
     }
 }
 
-export const updateItemStatu = async (req, res) => {
-  const { id } = req.params; // รับค่า id ของไอเทมจาก URL
-  const { status } = req.body; // รับค่าสถานะใหม่จาก body ของ request
-
-  try {
-    // ใช้ findOne เพื่อหาเอกสารที่ตรงกับ id
-    const itemToUpdate = await Item.findOne({ _id: id });
-
-    // ถ้าไม่พบไอเทมที่ต้องการอัปเดต
-    if (!itemToUpdate) {
-      return res.status(404).json({ message: 'Item not found.' });
-    }
-
-    // อัปเดตเฉพาะฟิลด์ status
-    itemToUpdate.status = status;
-
-    // บันทึกการเปลี่ยนแปลง
-    const updatedItem = await itemToUpdate.save();
-
-    // ส่งข้อมูลไอเทมที่อัปเดตแล้วกลับไป
-    res.status(200).json({
-      message: 'Item status updated successfully.',
-      data: updatedItem
-    });
-
-  } catch (error) {
-    // จัดการข้อผิดพลาดที่อาจเกิดขึ้น เช่น สถานะที่ส่งมาไม่อยู่ใน enum
-    res.status(500).json({ message: error.message });
-  }
-};
-
 export const updateItemStatus = async (itemIds, newStatus) => {
   try {
-    await Item.updateOne(
+    await Item.updateMany(
       { _id: { $in: itemIds } },
       { $set: { status: newStatus } }
     );
-    const updatedItems = await Item.find({ _id: { $in: itemIds } });
-    return updatedItems;
+  } catch (error) {
+    throw new Error(`Failed to update item status: ${error.message}`);
+  }
+};
+
+export const updateItemStatusinUse = async (itemIds, newStatus) => {
+  try {
+    await Item.updateMany(
+      { _id: { $in: itemIds } },
+      { $set: { status: newStatus } }
+    );
   } catch (error) {
     throw new Error(`Failed to update item status: ${error.message}`);
   }

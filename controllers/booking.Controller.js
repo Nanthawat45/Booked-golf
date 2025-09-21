@@ -113,27 +113,15 @@ export const getByIdBookings = async (req, res) => {
     }
 };
 
-// export const updateBookingAssets = async (bookingId)=>{
-//      const booking = await Booking.findById(bookingId);
-//      if (!booking) {
-//         throw new Error('Booking not found.');
-//     }
-//     const assetIds = [booking.golfCar, booking.golfBag];
-//         await Asset.updateMany(
-//             { _id: { $in: assetIds } },
-//             { $set: { status: onGoing } }
-//         );
-// }
-
 export const updateBookingStatus = async (bookingId, newStatus) => {
   try {
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
       { status: newStatus },
-      { new: true, runValidators: true }
+      { new: true }
     );
     if (!updatedBooking) {
-      throw new Error('Booking not found.');
+      throw new Error("Booking not found.");
     }
     return updatedBooking;
   } catch (error) {

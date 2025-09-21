@@ -12,7 +12,7 @@ const caddySchema = new mongoose.Schema({
     },
     caddyStatus: {
         type: String,
-        enum: ['available', 'booked', 'onDuty', 'clean', 'resting', 'unavailable'],
+        enum: ['available', 'booked', 'onGoing', 'clean', 'resting', 'unavailable'],
         default: 'available',
     },
 })
