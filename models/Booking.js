@@ -14,6 +14,7 @@ const bookingSchema = new mongoose.Schema({
     caddy: [{ 
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true
         }],
     totalPrice: { type: Number, required: true },
     isPaid: { type: Boolean, //เก็บค่าประเภท จริง/เท็จ (true/false)

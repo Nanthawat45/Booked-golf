@@ -1,6 +1,7 @@
 import Booking from "../models/Booking.js";
 import { checkItem } from "./item.controller.js";
 import {updateCaddyBooking} from "./caddy.Controller.js";
+
 export const createBooking = async (req, res) => {
      const { 
       courseType, 
@@ -16,6 +17,7 @@ export const createBooking = async (req, res) => {
     try {
         let golfBagId = [];
         let golfCarId = [];
+        //let caddybookd = [];
         if(golfBag>0){
             golfBagId = await checkItem(golfBag,"golfBag")
         }

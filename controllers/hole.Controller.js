@@ -1,4 +1,6 @@
 import Hole from "../models/Hole.js";
+import Booking from "../models/Booking.js";
+import Item from "../models/Item.js";
 
 export const close = async (req, res) => {
     const { holeNumber, description } = req.body;
@@ -122,20 +124,21 @@ export const getByIdHoles = async (req, res) => {
 }
 
 export const reportHelpCar = async (req, res) => {
-    const { holeNumber, description } = req.body;
-    const userId = req.user._id; 
+    const { holeNumber, description, bookingId } = req.body;
+    const userId = req.user._id;
+
     try {
-        // ค้นหาหลุมจาก holeNumber
         const hole = await Hole.findOne({ holeNumber: holeNumber });
-        // ถ้าไม่พบหลุม ให้ส่งข้อความ error
         if (!hole) {
             return res.status(404).json({ message: "Hole not found." });
         }
-        // อัปเดตสถานะของหลุม
+        
+        // อัปเดตสถานะของหลุมและบันทึก ID การจอง
         hole.status = "help_car";
         hole.description = description;
         hole.reportedBy = userId;
-        // บันทึกการเปลี่ยนแปลง
+        hole.bookingId = bookingId; // << จุดสำคัญที่เชื่อม Hole กับ Booking
+        
         const updatedHole = await hole.save();
         res.status(200).json({ 
             message: "Help Car reported successfully.", 
@@ -146,23 +149,83 @@ export const reportHelpCar = async (req, res) => {
     }
 };
 
-export const resolveGoCar= async (req, res) => {
-    const { holeId } = req.params;
-    const userId = req.user._id;
+// export const resolveGoCar= async (req, res) => {
+//     const { holeId } = req.params;
+//     const userId = req.user._id;
+//     try {
+//         const hole = await Hole.findById(holeId);
+//         if (!hole) {
+//             return res.status(404).json({ message: "Hole not found." });
+//         }
+//         // อัปเดตสถานะและข้อมูลผู้แก้ไข
+//         hole.status = "go_help_car";
+//         hole.resolvedBy = userId;
+//         const updatedHole = await hole.save();
+//         res.status(200).json({ 
+//             message: "go car marked as resolving.", 
+//             hole: updatedHole 
+//         });
+//     } catch (error) {
+//         res.status(500).json({ message: "An error occurred while updating the go car" });
+//     }
+// };
+
+export const resolveGoCar = async (req, res) => {
+    // รับแค่ ID ของหลุมมาก็พอ เพราะที่เหลือจะค้นหาเอง
+    const { holeNumber } = req.body;
+    const userId = req.user._id; // ID ของผู้ใช้งานที่เข้าไปแก้ไข
+
     try {
-        const hole = await Hole.findById(holeId);
-        if (!hole) {
-            return res.status(404).json({ message: "Hole not found." });
+        // 1. ค้นหา Hole ที่มีปัญหา และใช้ bookingId ที่ถูกบันทึกไว้
+        const hole = await Hole.findOne({ holeNumber: holeNumber });
+        if (!hole || !hole.bookingId) {
+            return res.status(404).json({ message: "ไม่พบข้อมูลการแจ้งปัญหาที่เกี่ยวข้องกับหลุมนี้" });
         }
-        // อัปเดตสถานะและข้อมูลผู้แก้ไข
+
+        const booking = await Booking.findById(hole.bookingId);
+        if (!booking) {
+            return res.status(404).json({ message: "ไม่พบข้อมูลการจอง" });
+        }
+
+        // 2. ค้นหา 'รถคันเก่า' ที่กำลังถูกใช้งานอยู่ (inUse) จากข้อมูลการจอง
+        const oldGolfCar = await Item.findOne({ 
+            _id: { $in: booking.bookedGolfCarIds }, 
+            status: 'inUse' 
+        });
+        if (!oldGolfCar) {
+            return res.status(404).json({ message: "ไม่พบรถกอล์ฟที่กำลังใช้งานอยู่ในการจองนี้" });
+        }
+        
+        // 3. ค้นหา 'รถสำรอง' ที่มีสถานะเป็น 'spare'
+        const newGolfCar = await Item.findOne({ status: 'spare' });
+        if (!newGolfCar) {
+            return res.status(404).json({ message: "ไม่พบรถกอล์ฟสำรองที่พร้อมใช้งาน" });
+        }
+
+        // 4. อัปเดตสถานะของรถกอล์ฟ
+        oldGolfCar.status = 'broken';
+        await oldGolfCar.save();
+
+        newGolfCar.status = 'inUse';
+        await newGolfCar.save();
+
+        // 5. อัปเดตข้อมูลการจอง (Booking) เพื่อเปลี่ยนรถ
+        booking.bookedGolfCarIds = booking.bookedGolfCarIds.filter(id => id.toString() !== oldGolfCar._id.toString());
+        booking.bookedGolfCarIds.push(newGolfCar._id);
+        await booking.save();
+        
+        // 6. อัปเดตสถานะของ Hole และบันทึกผู้แก้ไข
         hole.status = "go_help_car";
         hole.resolvedBy = userId;
         const updatedHole = await hole.save();
+        
         res.status(200).json({ 
-            message: "go car marked as resolving.", 
-            hole: updatedHole 
+            message: "การแก้ไขปัญหารถกอล์ฟสำเร็จ และสถานะทั้งหมดได้รับการอัปเดตแล้ว", 
+            hole: updatedHole
         });
+        
     } catch (error) {
-        res.status(500).json({ message: "An error occurred while updating the go car" });
+        console.error("เกิดข้อผิดพลาดในการแก้ไขปัญหา:", error);
+        res.status(500).json({ message: "เกิดข้อผิดพลาดขณะดำเนินการ" });
     }
 };

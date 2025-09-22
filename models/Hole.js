@@ -7,6 +7,9 @@ const holeSchema = new mongoose.Schema({
         unique: true,
         min: 1, max: 18
     },
+    bookingId: { 
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Booking"},
     // holeType: { 
     //     type: String, 
     //     enum: [

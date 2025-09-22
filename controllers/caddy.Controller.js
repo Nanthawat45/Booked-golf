@@ -59,6 +59,7 @@ export const updateCaddyBooking = async (caddyId, newStatus) => {
       { caddy_id: { $in: caddyId } },
       { $set: { caddyStatus: newStatus } }
     );
+    return caddyId; 
   } catch (error) {
     throw new Error(`Failed to update caddy status: ${error.message}`);
   }
