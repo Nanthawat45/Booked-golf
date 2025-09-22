@@ -10,7 +10,8 @@ const userSchema = new mongoose.Schema(
             type:String,
             enum:["user","admin","caddy","starter"],
             default:"user"
-        }
+        },
+        img:{ type: String, default: null }
     }
 );
 

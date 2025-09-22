@@ -149,27 +149,6 @@ export const reportHelpCar = async (req, res) => {
     }
 };
 
-// export const resolveGoCar= async (req, res) => {
-//     const { holeId } = req.params;
-//     const userId = req.user._id;
-//     try {
-//         const hole = await Hole.findById(holeId);
-//         if (!hole) {
-//             return res.status(404).json({ message: "Hole not found." });
-//         }
-//         // อัปเดตสถานะและข้อมูลผู้แก้ไข
-//         hole.status = "go_help_car";
-//         hole.resolvedBy = userId;
-//         const updatedHole = await hole.save();
-//         res.status(200).json({ 
-//             message: "go car marked as resolving.", 
-//             hole: updatedHole 
-//         });
-//     } catch (error) {
-//         res.status(500).json({ message: "An error occurred while updating the go car" });
-//     }
-// };
-
 export const resolveGoCar = async (req, res) => {
     // รับแค่ ID ของหลุมมาก็พอ เพราะที่เหลือจะค้นหาเอง
     const { holeNumber } = req.body;

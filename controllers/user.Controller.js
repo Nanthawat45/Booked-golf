@@ -18,6 +18,7 @@ export const generateToken = (userId, res) => {
 
 export const registerUser = async (req, res) => {
   const{ name, phone, email, password , role} = req.body;
+  const img = req.file ? req.file.firebaseUrl : null;
 
   try{
     const userExists = await User.findOne({email});
@@ -35,7 +36,8 @@ export const registerUser = async (req, res) => {
       phone,
       email,
       password: hashedPassword,
-      role
+      role,
+      img
     });
     if(newUser){
       if(role === "caddy")
@@ -52,7 +54,8 @@ export const registerUser = async (req, res) => {
         name: newUser.name,
         phone: newUser.phone,
         email: newUser.email,
-        role: newUser.role
+        role: newUser.role,
+        img: newUser.img
       });
 
     }else{
