@@ -230,3 +230,13 @@ export const cancelDuringRound = async (req, res) => {
     res.status(400).json({ error: error.message || "Failed to start round." });
   }
 };
+
+export const getCaddyAvailable = async (req, res) => {
+  try{
+    const caddy = await Caddy.find({caddyStatus: 'available'})
+    res.status(200).json(caddy);
+  } catch (error) {
+    console.error("Failed to get available caddies:", error);
+    res.status(400).json({ error: error.message || "Failed to get available caddies." });
+  }
+}

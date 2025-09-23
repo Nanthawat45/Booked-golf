@@ -6,9 +6,8 @@ import {
     endRound,
     cancelDuringRound,
     cancelStart,
-
-    
-    }from "../controllers/caddy.Controller.js"
+    getCaddyAvailable
+}from "../controllers/caddy.Controller.js"
 
 import { protect } from '../middleware/auth.Middleware.js';
 
@@ -19,5 +18,7 @@ router.put("/end/:bookingId", protect, endRound);
 router.put("/available/:bookingId", protect, markCaddyAsAvailable);
 router.put("/cancel-start/:bookingId", protect, cancelStart);
 router.put("/cancel-during-round/:bookingId", protect, cancelDuringRound);
+
+router.get("/available-caddies", protect, getCaddyAvailable);
 
 export default router;
