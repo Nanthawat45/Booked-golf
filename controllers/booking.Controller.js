@@ -17,21 +17,33 @@ export const createBooking = async (req, res) => {
     try {
         let golfBagId = [];
         let golfCarId = [];
-        //let caddybookd = [];
         if(golfBag>0){
             golfBagId = await checkItem(golfBag,"golfBag")
         }
         if(golfBagId.length < golfBag){
             return res.status(400).json({message:"Not enough golf Bag available."})
         }
-
         if(golfCar>0){
             golfCarId = await checkItem(golfCar,"golfCar")
         }
         if(golfCarId.length < golfCar){
             return res.status(400).json({message:"Not enough golf cars available."})
         }
-        const caddybookd = await updateCaddyBooking(caddy, 'booked');
+        const caddyArray = Array.isArray(caddy) ? caddy : [caddy];
+        for (const caddyId of caddyArray) {
+            const overlap = await Booking.findOne({
+                caddy: caddyId,
+                date: new Date(date) // วันที่ที่ลูกค้ากำลังจะจอง
+            });
+
+            if (overlap) {
+                return res.status(400).json({ 
+                message: `Caddy ${caddyId} is already booked on this date.` 
+                });
+            }
+        }
+        const caddybookd = await updateCaddyBooking(caddyArray, 'booked');
+
         const booking = new Booking({
             user: req.user._id,
             courseType,
@@ -42,14 +54,14 @@ export const createBooking = async (req, res) => {
             caddy: caddybookd, 
             totalPrice,
             isPaid: false, // ยังไม่ชำระเงิน
-            golfCar: golfCar, 
-            golfBag: golfBag,
+            golfCar, 
+            golfBag,
             bookedGolfCarIds: golfCarId,
             bookedGolfBagIds: golfBagId,
             status: 'booked'
             });
         const savedBooking = await booking.save();
-        res.status(201).json(savedBooking);
+         res.status(201).json({ success: true, booking: savedBooking });
     } catch (error) {
         console.error("Error creating booking:", error);
         res.status(500).json({ message: "Server error" });

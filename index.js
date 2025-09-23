@@ -3,11 +3,15 @@ import UserRoute from './routes/user.Routes.js';
 import ItemRoute from './routes/item.Route.js';
 import HoleRoute from './routes/hole.Route.js';
 import CaddyRoute from './routes/caddy.Route.js';
+import StripeRoute from './routes/stripe.Route.js';
 import mongoose from 'mongoose';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import Stripe from 'stripe';
+
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 dotenv.config();
 const DB_URL = process.env.DB_URL;
@@ -25,12 +29,14 @@ app.use(cors({
   origin: process.env.FRONTEND_URL, 
   credentials: true, 
   methods: ['GET', 'POST', 'PUT', 'DELETE']}));
-
+  
+app.use("/api/stripe", StripeRoute);
 app.use("/api/booking", BookingRoute);
 app.use("/api/user", UserRoute);
 app.use("/api/item", ItemRoute);
 app.use("/api/hole", HoleRoute);
-app.use("/api/caddy", CaddyRoute)
+app.use("/api/caddy", CaddyRoute);
+
 
 app.get("/", (req, res) => {
   res.send("Backend is running PORT 5000");

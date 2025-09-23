@@ -2,8 +2,10 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
 export const protect = async (req, res, next) => {
+      if (req.originalUrl === "/api/stripe/webhook") {
+        return next();
+    }
     const token = req.cookies.jwt;
-
     if (!token) {
         return res.status(401).json({ message: 'Not authorized, no token' });
     }

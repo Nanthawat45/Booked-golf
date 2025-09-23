@@ -2,6 +2,8 @@ import Caddy from "../models/Caddy.js";
 import Booking from "../models/Booking.js";
 import { updateBookingStatus  } from "./booking.Controller.js"
 import { updateItemStatus } from "./item.controller.js";
+import { startOfDay, endOfDay } from 'date-fns';
+import mongoose from "mongoose";
 
 export const startRound = async (req, res) => {
   const { bookingId } = req.params;
@@ -137,7 +139,19 @@ export const markCaddyAsAvailable = async (req, res) => {
       await updateItemStatus(bookedAssetIds, 'available');
     }
 
-    // 4. เปลี่ยนสถานะของแคดดี้ จาก 'booked' เป็น 'available'
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0);
+
+  //   const futureBooking = await Booking.findOne({
+  //   caddy: caddyId,
+  //   date: { $gte: today },   // ตรวจสอบทุก booking ตั้งแต่วันนี้ขึ้นไป
+  //   status: 'booked'
+  // });
+
+  //   const newStatus = futureBooking ? 'booked' : 'available';
+
+    // เรียกใช้ฟังก์ชั่น updateCaddyStatus
+    //const updatedCaddy = await updateCaddyStatus(caddyId, newStatus);
     const updatedCaddy = await updateCaddyStatus(caddyId, 'available');
 
     res.status(200).json({
@@ -232,11 +246,36 @@ export const cancelDuringRound = async (req, res) => {
 };
 
 export const getCaddyAvailable = async (req, res) => {
-  try{
-    const caddy = await Caddy.find({caddyStatus: 'available'})
-    res.status(200).json(caddy);
+  try {
+    const today = new Date();
+    const startOfToday = startOfDay(today);
+    const endOfToday = endOfDay(today);
+    console.log(today)
+
+    // ส่วนที่เหลือของโค้ด
+    const bookedBookings = await Booking.find({
+      date: { $gte: startOfToday, $lte: endOfToday },
+      status: { $in: ["booked", "onGoing", "clean"] }
+    });
+
+    const bookedCaddyIds = bookedBookings.flatMap(b => b.caddy.map(id => id.toString()));
+
+    const availableCaddies = await Caddy.find({
+      caddy_id: { $nin: bookedCaddyIds }
+    });
+
+    res.status(200).json(availableCaddies);
   } catch (error) {
     console.error("Failed to get available caddies:", error);
     res.status(400).json({ error: error.message || "Failed to get available caddies." });
   }
-}
+};
+
+// export const isCaddyAvailable = async (caddyId, startDate, endDate) => {
+//   const conflictingBooking = await Booking.findOne({
+//     caddy: caddyId,
+//     date: { $gte: startDate, $lte: endDate }, // ตรวจสอบช่วงวัน overlap
+//     status: { $in: ['booked', 'onGoing'] } 
+//   });
+//   return !conflictingBooking;
+// };

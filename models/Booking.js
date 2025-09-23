@@ -36,6 +36,8 @@ const bookingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Item'
         }], 
+    // startDate: { type: Date, required: true },
+    // endDate: { type: Date, required: true },
 }, { timestamps: true });
 
 const Booking = mongoose.model('Booking', bookingSchema);
