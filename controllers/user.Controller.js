@@ -18,19 +18,16 @@ export const generateToken = (userId, res) => {
 
 export const registerByAdmin = async (req, res) => {
   const { name, phone, email, password, role } = req.body;
-  const img = req.file ? req.file.firebaseUrl : null;
+  const img = req.files?.[0]?.firebaseUrl || null;
 
   try {
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).json({ message: "User already exists" });//มีผู้ใช้อยู่แล้ว
+      return res.status(400).json({ message: "User already exists" });
     }
-    // const admin = await User.finById(req.user.id);
-    // if(!admin || admin.role !== 'admin'){
-    //   return res.status(403).json({message:"Only admin can assign roles"});
-    // }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
     const newUser = await User.create({
       name,
       phone,
@@ -39,31 +36,29 @@ export const registerByAdmin = async (req, res) => {
       role,
       img
     });
-    if (newUser) {
-      if (role === "caddy")
-        await Caddy.create({
-          caddy_id: newUser._id,
-          name: newUser.name,
-          caddyStatus: 'available' // กำหนดสถานะเริ่มต้น
-        });
-    }
-    if (newUser) {
-      generateToken(newUser._id, res);
-      res.status(201).json({
-        _id: newUser._id,
-        name: newUser.name,
-        phone: newUser.phone,
-        email: newUser.email,
-        role: newUser.role,
-        img: newUser.img
-      });
 
-    } else {
-      res.status(400).json({ message: "Invalid user data" });//ข้อมูลผู้ใช้ไม่ถูกต้อง
+    if (newUser && role === "caddy") {
+      await Caddy.create({
+        caddy_id: newUser._id,
+        name: newUser.name,
+        caddyStatus: "available"
+      });
     }
+
+    generateToken(newUser._id, res);
+
+    res.status(201).json({
+      _id: newUser._id,
+      name: newUser.name,
+      phone: newUser.phone,
+      email: newUser.email,
+      role: newUser.role,
+      img: newUser.img
+    });
+
   } catch (error) {
-    console.log("Error in registerUser:", error);// ข้อผิดพลาดในการลงทะเบียนผู้ใช้
-    return res.status(500).json({ message: "Server error" })
+    console.error("Error in registerByAdmin:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -179,3 +174,4 @@ export const logout = (req, res) => {
   // 2. ส่ง response กลับไปให้ client
   res.status(200).json({ message: 'Logged out successfully' });
 };
+

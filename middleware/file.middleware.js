@@ -1,83 +1,70 @@
-import multer from"multer";
-import path  from"path";
-
+import multer from "multer";
+import path from "path";
+import { initializeApp } from "firebase/app";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import firebaseConfig from "../config/Firebase.js";
-// console.log(firebaseConfig);
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-}  from "firebase/storage";
-import { initializeApp }  from"firebase/app";
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const firebaseStorage = getStorage(app);
 
-// set storage engine
-const storage = multer.diskStorage({
-  destination: "./uploads/",
-  filename: (req, file, cb) => {
-    cb(
-      null,
-      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
-    );
-  },
-});
+// ใช้ memory storage
+const storage = multer.memoryStorage();
 
-// init upload
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fieldSize: 1000000 }, // limit 1Mb
-  fileFilter: (req, file, cb) => {
-    checkFileType(file, cb); // check file existed
-  },
-}).single("file"); // input name
-
-function checkFileType(file, cb) {
-  const fileTypes = /jpeg||jpg||png||gif||webp/;
+// ตรวจสอบชนิดไฟล์
+const fileFilter = (req, file, cb) => {
+  const fileTypes = /jpeg|jpg|png|gif|webp/;
   const extName = fileTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimeType = fileTypes.test(file.mimeType);
+  const mimeType = fileTypes.test(file.mimetype);
 
-  if (mimeType && extName) {
-    return cb(null, true);
+  if (extName && mimeType) {
+    cb(null, true);
   } else {
-    cb("Error: Image Only!");
+    cb(new Error("Only image files are allowed!"));
   }
-}
+};
 
-// Upload file to Firebase Storage
-async function uploadToFirebase(req, res, next) {
-  if (!req.file) {
-    // return res.status(400).json({ message: "Image is required!" });
-    next();
-    // return;
-  } else {
-    const storageRef = ref(firebaseStorage, `uploads/${req.file.originalname}`);
+// multer middleware รับทุก field name
+const upload = multer({
+  storage,
+  limits: { fileSize: 1 * 1024 * 1024 }, // 1 MB
+  fileFilter,
+}).any(); // <- any() รับ field name อะไรก็ได้
 
-    const metadata = {
-      contentType: req.file.mimetype,
-    };
-
-    try {
-      // uploading
-      const snapshot = await uploadBytesResumable(
-        storageRef,
-        req.file.buffer,
-        metadata
-      );
-      req.file.firebaseUrl = await getDownloadURL(snapshot.ref);
-      console.log(req.file.firebaseUrl);
-      next();
-      // return;
-    } catch (error) {
-      res.status(500).json({
-        message:
-          "An error occurred while uploading file to firebase!" ||
-          error.message,
-      });
+// wrapper handle error ของ multer
+const handleUpload = (req, res, next) => {
+  upload(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ message: err.message });
+    } else if (err) {
+      return res.status(400).json({ message: err.message });
     }
-  }
-}
+    next();
+  });
+};
 
-export { upload, uploadToFirebase };
+// อัปโหลดไฟล์ไป Firebase
+const uploadToFirebase = async (req, res, next) => {
+  if (!req.files || req.files.length === 0) return next();
+
+  try {
+    // อัปโหลดไฟล์ทั้งหมด ถ้ามีหลายไฟล์
+    for (let file of req.files) {
+      const fileName = `${Date.now()}-${file.originalname}`;
+      const storageRef = ref(firebaseStorage, `uploads/${fileName}`);
+      const snapshot = await uploadBytesResumable(storageRef, file.buffer, {
+        contentType: file.mimetype,
+      });
+      file.firebaseUrl = await getDownloadURL(snapshot.ref);
+    }
+    next();
+  } catch (error) {
+    console.error("Firebase upload error:", error);
+    res.status(500).json({
+      message: "Failed to upload image to Firebase",
+      error: error.message,
+    });
+  }
+};
+
+export { handleUpload as upload, uploadToFirebase };
