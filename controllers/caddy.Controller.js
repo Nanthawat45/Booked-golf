@@ -279,3 +279,27 @@ export const getCaddyAvailable = async (req, res) => {
 //   });
 //   return !conflictingBooking;
 // };
+
+export const getCaddyBooking = async (req, res) => {
+    const caddyId = req.user._id; // ID ของแคดดี้ที่ล็อกอินอยู่
+
+    try {
+        const bookings = await Booking.find({ // ค้นหา Booking ที่มีแคดดี้คนนี้ถูกมอบหมาย
+            caddy: caddyId, //caddy ต้องตรงกับ caddyId ที่ล็อกอินอยู่
+        })
+        .select('courseType date timeSlot groupName') // เลือกเฉพาะ field ที่ต้องการ
+        .sort({ date: 1, timeSlot: 1 }); // เรียงตามวันที่และเวลา //.sort การเรียงลำดับ
+        // 1 คือ เรียงจากน้อยไปมาก (Ascending) -1 คือ เรียงจากมากไปน้อย (Descending)
+        // แล้วถ้าวันที่เหมือนกัน ก็จะเรียงตาม เวลาที่จอง
+        if (!bookings || bookings.length === 0) { 
+            return res.status(404).json({ message: "No assigned bookings found." }); 
+            // ถ้าไม่พบการจองที่แคดดี้ถูกมอบหมาย ให้ส่งข้อความว่าไม่พบการจอง
+        }
+        res.status(200).json(bookings); // ส่งข้อมูลการจองที่แคดดี้ถูกมอบหมายกลับไปยังผู้ใช้
+
+    } catch (error) {
+        res.status(500).json({ error: error.message || "Failed to fetch assigned bookings." });
+        // ไม่สามารถรับการจองที่ ถูกมอบหมายได้
+        // ส่งข้อความแสดงข้อผิดพลาดกลับไปยังผู้ใช้
+    }
+};

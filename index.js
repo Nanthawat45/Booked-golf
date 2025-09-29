@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { setupSwagger } from "./swagger.js";
 import cookieParser from 'cookie-parser';
 import Stripe from 'stripe';
 
@@ -36,7 +37,7 @@ app.use("/api/user", UserRoute);
 app.use("/api/item", ItemRoute);
 app.use("/api/hole", HoleRoute);
 app.use("/api/caddy", CaddyRoute);
-
+setupSwagger(app);
 
 app.get("/", (req, res) => {
   res.send("Backend is running PORT 5000");
