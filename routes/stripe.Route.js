@@ -1,15 +1,20 @@
-import express from 'express';
-import { createPaymentIntent, handleWebhook } from '../controllers/stripe.controller.js';
+import express from "express";
+import { createPaymentIntent, handleWebhook, getBookingBySession } from "../controllers/stripe.controller.js";
+import { protect } from "../middleware/auth.Middleware.js";
 
 const router = express.Router();
 
-// Route สำหรับสร้าง PaymentIntent
-// Frontend จะเรียกใช้ API นี้เพื่อรับ clientSecret
-router.post('/create-payment-intent', createPaymentIntent);
+// สร้าง PaymentIntent (สำหรับ user ปกติ)
+router.post("/create-payment-intent", protect, createPaymentIntent);
 
-// Route สำหรับ Webhook
-// Stripe จะเรียกใช้ API นี้โดยตรง
-// **สำคัญ: ต้องใช้ express.raw() เพื่อให้ Stripe ตรวจสอบ signature ได้**
-router.post('/webhook', express.raw({ type: 'application/json' }), handleWebhook);
+// Stripe Webhook (สำคัญ! ต้อง express.raw สำหรับ signature verification)
+router.post(
+  "/webhook",
+  express.raw({ type: "application/json" }), 
+  handleWebhook
+);
+
+// ดึง booking ด้วย sessionId (Step5)
+router.get("/by-session/:sessionId", getBookingBySession);
 
 export default router;

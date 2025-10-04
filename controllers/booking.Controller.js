@@ -1,72 +1,52 @@
 import Booking from "../models/Booking.js";
 import { checkItem } from "./item.controller.js";
 import {updateCaddyBooking} from "./caddy.Controller.js";
+import { createPaymentIntent } from "./stripe.controller.js";
 
 export const createBooking = async (req, res) => {
-     const { 
-      courseType, 
-      date, 
-      timeSlot, 
-      players, 
-      groupName, 
-      caddy, 
-      totalPrice, 
-      golfCar = 0, 
-      golfBag = 0,   
+  try {
+    const {
+      courseType, date, timeSlot, players, groupName, caddy,
+      totalPrice, golfCar = 0, golfBag = 0
     } = req.body;
-    try {
-        let golfBagId = [];
-        let golfCarId = [];
-        if(golfBag>0){
-            golfBagId = await checkItem(golfBag,"golfBag")
-        }
-        if(golfBagId.length < golfBag){
-            return res.status(400).json({message:"Not enough golf Bag available."})
-        }
-        if(golfCar>0){
-            golfCarId = await checkItem(golfCar,"golfCar")
-        }
-        if(golfCarId.length < golfCar){
-            return res.status(400).json({message:"Not enough golf cars available."})
-        }
-        const caddyArray = Array.isArray(caddy) ? caddy : [caddy];
-        for (const caddyId of caddyArray) {
-            const overlap = await Booking.findOne({
-                caddy: caddyId,
-                date: new Date(date) // วันที่ที่ลูกค้ากำลังจะจอง
-            });
 
-            if (overlap) {
-                return res.status(400).json({ 
-                message: `Caddy ${caddyId} is already booked on this date.` 
-                });
-            }
-        }
-        const caddybookd = await updateCaddyBooking(caddyArray, 'booked');
+    // ตรวจสอบ availability
+    let golfBagId = [];
+    let golfCarId = [];
+    if (golfBag > 0) golfBagId = await checkItem(golfBag, "golfBag");
+    if (golfBagId.length < golfBag) return res.status(400).json({ message: "Not enough golf Bag available." });
 
-        const booking = new Booking({
-            user: req.user._id,
-            courseType,
-            date,
-            timeSlot,
-            players,
-            groupName,
-            caddy: caddybookd, 
-            totalPrice,
-            isPaid: false, // ยังไม่ชำระเงิน
-            golfCar, 
-            golfBag,
-            bookedGolfCarIds: golfCarId,
-            bookedGolfBagIds: golfBagId,
-            status: 'booked'
-            });
-        const savedBooking = await booking.save();
-         res.status(201).json({ success: true, booking: savedBooking });
-    } catch (error) {
-        console.error("Error creating booking:", error);
-        res.status(500).json({ message: "Server error" });
+    if (golfCar > 0) golfCarId = await checkItem(golfCar, "golfCar");
+    if (golfCarId.length < golfCar) return res.status(400).json({ message: "Not enough golf cars available." });
+
+    // ตรวจสอบ caddy
+    const caddyArray = Array.isArray(caddy) ? caddy : [caddy];
+    for (const caddyId of caddyArray) {
+      const overlap = await Booking.findOne({ caddy: caddyId, date: new Date(date) });
+      if (overlap) return res.status(400).json({ message: `Caddy ${caddyId} is already booked.` });
     }
-}
+    const caddyBooked = await updateCaddyBooking(caddyArray, "booked");
+
+    // สร้าง booking
+    const booking = new Booking({
+      user: req.user._id,
+      courseType, date, timeSlot, players, groupName,
+      caddy: caddyBooked, totalPrice, isPaid: false,
+      golfCar, golfBag, bookedGolfCarIds: golfCarId,
+      bookedGolfBagIds: golfBagId, status: "pending"
+    });
+
+    const savedBooking = await booking.save();
+
+    // สร้าง Stripe session
+    const paymentUrl = await createPaymentIntent(savedBooking, req.user.email);
+
+    res.status(201).json({ success: true, booking: savedBooking, paymentUrl });
+  } catch (error) {
+    console.error("Error creating booking with payment:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 export const getBookings = async (req, res) => {
     try{
@@ -141,4 +121,22 @@ export const updateBookingStatus = async (bookingId, newStatus) => {
   } catch (error) {
     throw new Error(`Failed to update booking status: ${error.message}`);
   }
+};
+
+// GET Booking by ID (ข้อมูลใน Booking เท่านั้น)
+export const getById_BookingUser = async (req, res) => {
+    const user = req.user._id; // ID ของแคดดี้ที่ล็อกอินอยู่
+
+    try {
+        const bookings = await Booking.find({ user })
+        
+        .sort({ date: 1, timeSlot: 1 });
+        if (!bookings || bookings.length === 0) { 
+            return res.status(404).json({ message: "No assigned bookings found." }); 
+        }
+        res.status(200).json(bookings); 
+
+    } catch (error) {
+        res.status(500).json({ error: error.message || "Failed to fetch assigned bookings." });
+    }
 };

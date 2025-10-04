@@ -1,69 +1,95 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import Stripe from "stripe";
-import Booking from '../models/Booking.js';
-import "dotenv/config";
+import Booking from "../models/Booking.js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// สร้าง Payment Intent
-export const createPaymentIntent = async (req, res) => {
-  const { bookingId, amount } = req.body;
-  if (!bookingId || !amount) return res.status(400).json({ message: "Booking ID and amount are required." });
+// สร้าง PaymentIntent / Checkout Session
+export const createPaymentIntent = async (booking, userEmail) => {
+  const customer = await stripe.customers.create({
+    metadata: {
+      bookingId: booking._id.toString(),
+      userId: booking.user._id.toString(),
+    },
+    email: userEmail,
+  });
 
-  try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount * 100,
-      currency: 'thb',
-      metadata: { bookingId },
-      description: `Payment for booking ID: ${bookingId}`
-    });
-    res.status(200).json({ clientSecret: paymentIntent.client_secret });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error creating payment intent." });
-  }
+  const line_items = [
+    {
+      price_data: {
+        currency: "thb",
+        product_data: {
+          name: `Golf Booking - ${booking.courseType} holes`,
+          description: `Group: ${booking.groupName}, Date: ${booking.date.toDateString()}`,
+        },
+        unit_amount: booking.totalPrice * 100,
+      },
+      quantity: 1,
+    },
+  ];
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card", "promptpay"],
+    mode: "payment",
+    customer: customer.id,
+    line_items,
+    success_url: `${process.env.FRONTEND_URL}/booking?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
+  });
+
+  return session.url;
 };
 
-// จัดการ Webhook
+// Webhook สำหรับอัปเดต isPaid และ status
 export const handleWebhook = async (req, res) => {
-  const sig = req.headers['stripe-signature'];
+  const sig = req.headers["stripe-signature"];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   let event;
-
   try {
-    event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (err) {
-    console.error(`⚠️ Webhook signature verification failed:`, err.message);
+    console.error("Webhook signature verification failed:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  console.log("Received Stripe event:", event.type);
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
 
-  switch (event.type) {
-    case 'payment_intent.succeeded': {
-      const paymentIntent = event.data.object;
-      const bookingId = paymentIntent.metadata.bookingId;
+    const customer = await stripe.customers.retrieve(session.customer);
+    const bookingId = customer.metadata.bookingId;
 
-      try {
-        await Booking.findByIdAndUpdate(bookingId, {
-          isPaid: true,
-          status: 'booked',
-        });
-        console.log(`Payment successful and booking ID: ${bookingId} updated.`);
-      } catch (dbError) {
-        console.error("Error updating booking status:", dbError);
-        return res.status(500).send("Database update failed.");
-      }
-      break;
+    if (bookingId) {
+      const updatedBooking = await Booking.findByIdAndUpdate(
+        bookingId,
+        { isPaid: true, status: "booked" },
+        { new: true }
+      );
+      console.log(`Booking ${bookingId} marked as paid ✅`, updatedBooking);
     }
-    case 'payment_intent.payment_failed': {
-      const failedPaymentIntent = event.data.object;
-      console.log(`Payment failed for intent ID: ${failedPaymentIntent.id}`);
-      break;
-    }
-    default:
-      console.log(`Unhandled event type ${event.type}`);
+  } else {
+    console.log(`Unhandled event type ${event.type}`);
   }
 
   res.status(200).send("Received");
+};
+
+// ดึง booking จาก sessionId สำหรับ Step5
+export const getBookingBySession = async (req, res) => {
+  try {
+    const session = await stripe.checkout.sessions.retrieve(req.params.sessionId);
+    const customer = await stripe.customers.retrieve(session.customer);
+    const bookingId = customer.metadata.bookingId;
+
+    const booking = await Booking.findById(bookingId).populate("user", "name email");
+
+    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+    res.json({ success: true, booking });
+  } catch (err) {
+    console.error("Error fetching booking by session:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 };
