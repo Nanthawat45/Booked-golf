@@ -2,6 +2,7 @@ import Booking from "../models/Booking.js";
 import { checkItem } from "./item.controller.js";
 import {updateCaddyBooking} from "./caddy.Controller.js";
 import { createPaymentIntent } from "./stripe.controller.js";
+import { startOfDay, endOfDay, addHours } from "date-fns"
 
 export const createBooking = async (req, res) => {
   try {
@@ -139,4 +140,48 @@ export const getById_BookingUser = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message || "Failed to fetch assigned bookings." });
     }
+};
+
+export const getBookingToday = async (req, res) => {
+  try {
+    const { date } = req.query;
+
+    // ใช้วันจาก query หรือวันปัจจุบัน
+    const selectedDate = date ? new Date(date) : new Date();
+
+    // ⚙️ ปรับให้ตรงกับเวลาไทย (UTC+7)
+    // แปลงวันที่ที่เลือกจากไทย -> UTC
+    const startOfSelectedDay = addHours(startOfDay(selectedDate), -7);
+    const endOfSelectedDay = addHours(endOfDay(selectedDate), -7);
+
+    // console.log("🇹🇭 Thai date:", selectedDate);
+    // console.log("🕐 UTC range:", startOfSelectedDay, "→", endOfSelectedDay);
+
+    // 🔍 ค้นหาการจองภายในวันนั้น (ตามเวลาไทย)
+    const bookings = await Booking.find({
+      date: { $gte: startOfSelectedDay, $lte: endOfSelectedDay },
+    })
+      .populate("user", "name email phone")
+      .populate("caddy", "name")
+      .sort({ date: 1 });
+
+    // 🧭 แปลงเวลาที่แสดงกลับเป็นเวลาไทย (เพื่อความเข้าใจง่าย)
+    const bookingsWithThaiTime = bookings.map((b) => ({
+      ...b.toObject(),
+      date_thai: addHours(b.date, 7), // เพิ่ม 7 ชั่วโมง เพื่อแสดงตามเวลาไทย
+    }));
+
+    res.status(200).json({
+      success: true,
+      date: date || "today",
+      count: bookingsWithThaiTime.length,
+      bookings: bookingsWithThaiTime,
+    });
+  } catch (error) {
+    console.error("❌ Failed to get bookings by date:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch bookings",
+    });
+  }
 };

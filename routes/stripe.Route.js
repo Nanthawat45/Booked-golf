@@ -12,7 +12,7 @@ router.post(
   "/webhook",
   express.raw({ type: "application/json" }), 
   handleWebhook
-);
+); //stripe listen --forward-to localhost:5000/api/stripe/webhook
 
 // ดึง booking ด้วย sessionId (Step5)
 router.get("/by-session/:sessionId", getBookingBySession);

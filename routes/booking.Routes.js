@@ -5,7 +5,8 @@ import {
     updateBooking,
     deleteBooking,
     getByIdBookings,
-    getById_BookingUser
+    getById_BookingUser,
+    getBookingToday
 } from "../controllers/booking.Controller.js";
 import { protect } from '../middleware/auth.Middleware.js';
 
@@ -18,5 +19,6 @@ router.put("/:id", updateBooking);
 router.delete("/:id", deleteBooking);
 router.get("/getbyidbooked/:id", protect, getByIdBookings);
 router.get("/getbyidbookinguser", protect, getById_BookingUser);
+router.get("/today", protect, getBookingToday);
 
 export default router;

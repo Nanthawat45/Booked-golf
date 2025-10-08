@@ -3,7 +3,6 @@ import Booking from "../models/Booking.js";
 import { updateBookingStatus  } from "./booking.Controller.js"
 import { updateItemStatus } from "./item.controller.js";
 import { startOfDay, endOfDay } from 'date-fns';
-import mongoose from "mongoose";
 
 export const startRound = async (req, res) => {
   const { bookingId } = req.params;
@@ -55,26 +54,30 @@ export const updateCaddyStatus = async (caddyId, newStatus) => {
     throw new Error(`Failed to update caddy status: ${error.message}`);
   }
 };
-export const updateCaddyBooking = async (caddyId, newStatus) => {
-  try {
-    await Caddy.updateMany(
-      { caddy_id: { $in: caddyId } },
-      { $set: { caddyStatus: newStatus } }
-    );
-    return caddyId; 
-  } catch (error) {
-    throw new Error(`Failed to update caddy status: ${error.message}`);
-  }
-};
+// export const updateCaddyBooking = async (caddyId, newStatus) => {
 //   try {
-//     await Caddy.updateOne(
-//       { caddy_id: caddyId, caddyStatus: 'onGoing' },
+//     await Caddy.updateMany(
+//       { caddy_id: { $in: caddyId } },
 //       { $set: { caddyStatus: newStatus } }
 //     );
+//     return caddyId; 
 //   } catch (error) {
 //     throw new Error(`Failed to update caddy status: ${error.message}`);
 //   }
 // };
+export const updateCaddyBooking = async (caddyIds, newStatus) => {
+  try {
+    // อัปเดตเฉพาะแคดดี้ที่สถานะปัจจุบันเป็น "available" เท่านั้น
+    await Caddy.updateMany(
+      { _id: { $in: caddyIds }, caddyStatus: "available" }, 
+      { $set: { caddyStatus: newStatus } }
+    );
+
+    return caddyIds; 
+  } catch (error) {
+    throw new Error(`Failed to update caddy status: ${error.message}`);
+  }
+};
 
 export const endRound = async (req, res) => {
   const { bookingId } = req.params;
@@ -247,38 +250,50 @@ export const cancelDuringRound = async (req, res) => {
 
 export const getCaddyAvailable = async (req, res) => {
   try {
-    const today = new Date();
-    const startOfToday = startOfDay(today);
-    const endOfToday = endOfDay(today);
-    console.log(today)
+    // เวลาปัจจุบันของไทย
+    const now = new Date();
+    const thailandOffset = 7 * 60; // UTC+7
 
-    // ส่วนที่เหลือของโค้ด
+    // สร้างช่วงเวลา "เริ่มต้น" และ "สิ้นสุด" ของวัน (ตามเวลาไทย)
+    const startOfTodayTH = startOfDay(now);
+    const endOfTodayTH = endOfDay(now);
+
+    // แปลงช่วงเวลาไทย -> UTC (MongoDB เก็บเป็น UTC)
+    const startUTC = new Date(startOfTodayTH.getTime() - thailandOffset * 60000);
+    const endUTC = new Date(endOfTodayTH.getTime() - thailandOffset * 60000);
+
+    console.log("🇹🇭 Thai Time Now:", now);
+    console.log("Start of Today (TH):", startOfTodayTH);
+    console.log("End of Today (TH):", endOfTodayTH);
+    console.log("Start (UTC for Mongo):", startUTC);
+    console.log("End (UTC for Mongo):", endUTC);
+
+    // ดึง booking ที่จองภายในวันนี้ (เวลาตรงกับไทย)
     const bookedBookings = await Booking.find({
-      date: { $gte: startOfToday, $lte: endOfToday },
-      status: { $in: ["booked", "onGoing", "clean"] }
+      date: { $gte: startUTC, $lte: endUTC },
+      status: { $in: ["pending", "booked", "onGoing"] } // ถ้ายังไม่จบ
     });
 
-    const bookedCaddyIds = bookedBookings.flatMap(b => b.caddy.map(id => id.toString()));
+    // ดึง id ของแคดดี้ที่ถูกจองแล้ว
+    const bookedCaddyIds = bookedBookings.flatMap(b =>
+      b.caddy.map(id => id.toString())
+    );
 
+    console.log("Caddy ที่ถูกจองวันนี้:", bookedCaddyIds);
+
+    // ดึงเฉพาะแคดดี้ที่ยังไม่ถูกจอง
     const availableCaddies = await Caddy.find({
-      caddy_id: { $nin: bookedCaddyIds }
+      _id: { $nin: bookedCaddyIds }
     });
 
     res.status(200).json(availableCaddies);
   } catch (error) {
-    console.error("Failed to get available caddies:", error);
-    res.status(400).json({ error: error.message || "Failed to get available caddies." });
+    console.error("❌ Failed to get available caddies:", error);
+    res.status(400).json({
+      error: error.message || "Failed to get available caddies."
+    });
   }
 };
-
-// export const isCaddyAvailable = async (caddyId, startDate, endDate) => {
-//   const conflictingBooking = await Booking.findOne({
-//     caddy: caddyId,
-//     date: { $gte: startDate, $lte: endDate }, // ตรวจสอบช่วงวัน overlap
-//     status: { $in: ['booked', 'onGoing'] } 
-//   });
-//   return !conflictingBooking;
-// };
 
 export const getCaddyBooking = async (req, res) => {
     const caddyId = req.user._id; // ID ของแคดดี้ที่ล็อกอินอยู่
