@@ -187,3 +187,92 @@ export const getUserById = async (req, res) => {
     res.status(500).json({ message: error.message || 'Server error' });
   }
 };
+
+export const updateUser = async (req, res) => {
+  const { id } = req.params; // ดึง id ของผู้ใช้จากพารามิเตอร์ URL
+  const { name, phone, email, password, role } = req.body;
+  const img = req.files?.[0]?.firebaseUrl || null;
+
+  try {
+    // 🔍 ตรวจสอบว่าผู้ใช้มีอยู่จริงไหม
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 📩 ตรวจสอบว่า email ใหม่ซ้ำกับคนอื่นไหม (ยกเว้นตัวเอง)
+    if (email && email !== user.email) {
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+      user.email = email;
+    }
+
+    // ✏️ อัปเดตข้อมูลทั่วไป
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (role) user.role = role.toLowerCase();
+    if (img) user.img = img;
+
+    // 🔐 ถ้ามีรหัสผ่านใหม่ -> เข้ารหัสก่อน
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user.password = hashedPassword;
+    }
+
+    // 💾 บันทึกข้อมูลใหม่
+    const updatedUser = await user.save();
+
+    // 🧩 ถ้า role คือ caddy → ตรวจสอบหรือสร้าง/อัปเดตข้อมูลในตาราง Caddy
+    if (updatedUser.role === "caddy") {
+      const caddy = await Caddy.findOne({ caddy_id: updatedUser._id });
+      if (caddy) {
+        caddy.name = updatedUser.name;
+        await caddy.save();
+      } else {
+        await Caddy.create({
+          caddy_id: updatedUser._id,
+          name: updatedUser.name,
+          caddyStatus: "available"
+        });
+      }
+    }
+
+    res.status(200).json({
+      message: "User updated successfully",
+      user: {
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        phone: updatedUser.phone,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        img: updatedUser.img
+      }
+    });
+  } catch (error) {
+    console.error("Error in updateUserByAdmin:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getAllNotUser = async (req, res) => {
+  try {
+    // 🔍 ค้นหาผู้ใช้ทั้งหมดที่ role ไม่ใช่ 'user'
+    const employees = await User.find({ role: { $ne: "user" } })
+      .select("-password") // ตัดรหัสผ่านออกจากผลลัพธ์เพื่อความปลอดภัย
+      .sort({ role: 1, name: 1 }); // เรียงตาม role แล้วตามชื่อ
+
+    res.status(200).json({
+      success: true,
+      count: employees.length,
+      employees,
+    });
+  } catch (error) {
+    console.error("Error in getAllNotUser:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching non-user accounts.",
+    });
+  }
+};

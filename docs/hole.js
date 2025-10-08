@@ -7,7 +7,7 @@
 
 /**
  * @swagger
- * /api/hole/addhole:
+ * /hole/addhole:
  *   post:
  *     summary: สร้างหลุมใหม่
  *     tags: [Hole]
@@ -31,7 +31,7 @@
 
 /**
  * @swagger
- * /api/hole/close:
+ * /hole/close:
  *   put:
  *     summary: ปิดหลุม
  *     tags: [Hole]
@@ -59,7 +59,7 @@
 
 /**
  * @swagger
- * /api/hole/open:
+ * /hole/open:
  *   put:
  *     summary: เปิดหลุม
  *     tags: [Hole]
@@ -85,7 +85,7 @@
 
 /**
  * @swagger
- * /api/hole/report:
+ * /hole/report:
  *   put:
  *     summary: รายงานหลุมกำลังแก้ไข
  *     tags: [Hole]
@@ -111,7 +111,7 @@
 
 /**
  * @swagger
- * /api/hole/gethole:
+ * /hole/gethole:
  *   get:
  *     summary: ดึงข้อมูลหลุมทั้งหมด
  *     tags: [Hole]
@@ -126,7 +126,7 @@
 
 /**
  * @swagger
- * /api/hole/gethole/{id}:
+ * /hole/gethole/{id}:
  *   get:
  *     summary: ดึงข้อมูลหลุมตาม ID
  *     tags: [Hole]
@@ -149,7 +149,7 @@
 
 /**
  * @swagger
- * /api/hole/help-car:
+ * /hole/help-car:
  *   put:
  *     summary: รายงานปัญหารถกอล์ฟที่ต้องช่วย
  *     tags: [Hole]
@@ -179,7 +179,7 @@
 
 /**
  * @swagger
- * /api/hole/go-car:
+ * /hole/go-car:
  *   put:
  *     summary: แก้ไขปัญหารถกอล์ฟ
  *     tags: [Hole]

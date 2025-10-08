@@ -8,7 +8,7 @@
 /* ---------- Register User ---------- */
 /**
  * @swagger
- * /api/user/register:
+ * /user/register:
  *   post:
  *     summary: สมัครผู้ใช้งานทั่วไป
  *     tags: [User]
@@ -53,7 +53,7 @@
 /* ---------- Register User by Admin ---------- */
 /**
  * @swagger
- * /api/user/admin/register:
+ * /user/admin/register:
  *   post:
  *     summary: สมัครผู้ใช้งานโดย Admin
  *     tags: [User]
@@ -98,7 +98,7 @@
 /* ---------- Login ---------- */
 /**
  * @swagger
- * /api/user/login:
+ * /user/login:
  *   post:
  *     summary: เข้าสู่ระบบ
  *     tags: [User]
@@ -147,7 +147,7 @@
 /* ---------- Logout ---------- */
 /**
  * @swagger
- * /api/user/logout:
+ * /user/logout:
  *   post:
  *     summary: ออกจากระบบ
  *     tags: [User]
@@ -161,7 +161,7 @@
 /* ---------- Get User Profile ---------- */
 /**
  * @swagger
- * /api/user/profile:
+ * /user/profile:
  *   get:
  *     summary: ข้อมูลผู้ใช้งานปัจจุบัน
  *     tags: [User]
@@ -194,7 +194,7 @@
 /* ---------- Get All Users ---------- */
 /**
  * @swagger
- * /api/user/all:
+ * /user/all:
  *   get:
  *     summary: ดึงข้อมูลผู้ใช้ทั้งหมด
  *     tags: [User]
@@ -210,7 +210,7 @@
 /* ---------- Get User by ID ---------- */
 /**
  * @swagger
- * /api/user/getbyiduser/{id}:
+ * /user/getbyiduser/{id}:
  *   get:
  *     summary: ข้อมูลผู้ใช้งานตาม ID
  *     tags: [User]

@@ -6,7 +6,9 @@ import {
     getUserProfile,
     getAllUser,
     logout,
-    getUserById
+    getUserById,
+    updateUser,
+    getAllNotUser
 } from "../controllers/user.Controller.js";
 import { protect } from '../middleware/auth.Middleware.js';
 import { upload, uploadToFirebase } from "../middleware/file.middleware.js";
@@ -20,5 +22,7 @@ router.get("/profile", protect, getUserProfile);
 router.get("/all", protect, getAllUser);
 router.post("/logout", protect, logout);
 router.get("/getbyiduser/:id", protect, getUserById);
+router.put("/updateuser/:id", protect, upload, uploadToFirebase, updateUser);
+router.get("/allnotuser", protect, getAllNotUser);
 
 export default router;
