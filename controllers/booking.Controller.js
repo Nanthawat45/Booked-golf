@@ -1,7 +1,7 @@
 import Booking from "../models/Booking.js";
 import { checkItem } from "./item.controller.js";
 import {updateCaddyBooking} from "./caddy.Controller.js";
-import { createPaymentIntent } from "./stripe.controller.js";
+import { createCheckoutFromDetails } from "./stripe.controller.js";
 import { startOfDay, endOfDay, addHours } from "date-fns"
 
 export const createBooking = async (req, res) => {
@@ -10,6 +10,15 @@ export const createBooking = async (req, res) => {
       courseType, date, timeSlot, players, groupName, caddy,
       totalPrice, golfCar = 0, golfBag = 0
     } = req.body;
+
+    const bookingDate = new Date(date);
+    const isBooked = await Booking.checkAvailability(bookingDate, timeSlot);
+    if (isBooked) {
+      return res.status(400).json({
+        success: false,
+        message: `ไม่สามารถจองได้! มีการจองในวันที่ ${bookingDate.toDateString()} เวลา ${timeSlot} แล้ว`,
+      });
+    }
 
     // ตรวจสอบ availability
     let golfBagId = [];
@@ -40,9 +49,13 @@ export const createBooking = async (req, res) => {
     const savedBooking = await booking.save();
 
     // สร้าง Stripe session
-    const paymentUrl = await createPaymentIntent(savedBooking, req.user.email);
-
-    res.status(201).json({ success: true, booking: savedBooking, paymentUrl });
+    //const paymentUrl = await createPaymentIntent(savedBooking, req.user.email);
+        const result = await createCheckoutFromDetails({
+      body: { courseType, date, timeSlot, players, groupName, caddy, golfCartQty: golfCar, golfBagQty: golfBag, totalPrice },
+      user: req.user
+    }, res);
+    return result;
+    //res.status(201).json({ success: true, booking: savedBooking, paymentUrl });
   } catch (error) {
     console.error("Error creating booking with payment:", error);
     res.status(500).json({ message: "Server error" });

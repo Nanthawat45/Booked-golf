@@ -40,5 +40,19 @@ const bookingSchema = new mongoose.Schema({
     // endDate: { type: Date, required: true },
 }, { timestamps: true });
 
+  bookingSchema.statics.checkAvailability = async function (date, timeSlot) {
+  const bookingDate = new Date(date); // ไม่ normalize ชั่วโมง
+
+  // หา booking ที่วันและเวลาตรงกัน (แต่ยังไม่ถูกยกเลิก)
+  const exists = await this.exists({
+    date: bookingDate,
+    timeSlot: timeSlot,
+    status: { $ne: "canceled" },
+  });
+
+  // true = ถูกจองแล้ว, false = ยังว่าง
+  return !!exists;
+};
+
 const Booking = mongoose.model('Booking', bookingSchema);
 export default Booking;
