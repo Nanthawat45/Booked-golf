@@ -45,8 +45,6 @@ export const registerByAdmin = async (req, res) => {
       });
     }
 
-    generateToken(newUser._id, res);
-
     res.status(201).json({
       _id: newUser._id,
       name: newUser.name,

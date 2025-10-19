@@ -3,6 +3,7 @@ import Booking from "../models/Booking.js";
 import { updateBookingStatus  } from "./booking.Controller.js"
 import { updateItemStatus } from "./item.controller.js";
 import { startOfDay, endOfDay } from 'date-fns';
+import mongoose from "mongoose";
 
 export const startRound = async (req, res) => {
   const { bookingId } = req.params;
@@ -31,11 +32,11 @@ export const startRound = async (req, res) => {
     await updateCaddyStatus(caddyId, 'onGoing');
 
     // 5. เปลี่ยนสถานะของ Booking จาก 'booked' เป็น 'onGoing'
-    const updatedBooking = await updateBookingStatus(bookingId, 'onGoing');
+    const bump = await checkUpdatedBookingStatus(bookingId, 'afterStart');
 
     res.status(200).json({
       message: "Round started successfully. All assets and caddies are now in use.",
-      booking: updatedBooking
+      booking: bump
     });
 
   } catch (error) {
@@ -106,11 +107,11 @@ export const endRound = async (req, res) => {
     await updateCaddyStatus(caddyId, 'clean');
 
     // 5. เปลี่ยนสถานะของ Booking จาก 'booked' เป็น 'completed'
-    const updatedBooking = await updateBookingStatus(bookingId, 'completed');
+    const bump = await checkUpdatedBookingStatus(bookingId, 'afterEnd');
 
     res.status(200).json({
       message: "Round started successfully. All assets and caddies are now in use.",
-      booking: updatedBooking
+      booking: bump
     });
 
   } catch (error) {
@@ -141,20 +142,6 @@ export const markCaddyAsAvailable = async (req, res) => {
     if (bookedAssetIds.length > 0) {
       await updateItemStatus(bookedAssetIds, 'available');
     }
-
-  //   const today = new Date();
-  //   today.setHours(0, 0, 0, 0);
-
-  //   const futureBooking = await Booking.findOne({
-  //   caddy: caddyId,
-  //   date: { $gte: today },   // ตรวจสอบทุก booking ตั้งแต่วันนี้ขึ้นไป
-  //   status: 'booked'
-  // });
-
-  //   const newStatus = futureBooking ? 'booked' : 'available';
-
-    // เรียกใช้ฟังก์ชั่น updateCaddyStatus
-    //const updatedCaddy = await updateCaddyStatus(caddyId, newStatus);
     const updatedCaddy = await updateCaddyStatus(caddyId, 'available');
 
     res.status(200).json({
@@ -195,11 +182,11 @@ export const cancelStart = async (req, res) => {
     await updateCaddyStatus(caddyId, 'available');
 
     // 5. เปลี่ยนสถานะของ Booking จาก 'booked' เป็น 'canceled'
-    const updatedBooking = await updateBookingStatus(bookingId, 'canceled');
+    const bump = await checkUpdatedBookingStatus(bookingId, 'afterCancel');
 
     res.status(200).json({
       message: "Round canceled successfully. All assets and caddies are now available.",
-      booking: updatedBooking
+      booking: bump
     });
 
   } catch (error) {
@@ -235,11 +222,11 @@ export const cancelDuringRound = async (req, res) => {
     await updateCaddyStatus(caddyId, 'clean');
 
     // 5. เปลี่ยนสถานะของ Booking จาก 'booked' เป็น 'canceled'
-     const updatedBooking = await updateBookingStatus(bookingId, 'canceled');
+    const bump = await checkUpdatedBookingStatus(bookingId, 'afterCancel');
 
     res.status(200).json({
       message: "Round canceled successfully. All assets and caddies are now available.",
-      booking: updatedBooking
+      booking: bump
     });
 
   } catch (error) {
@@ -317,4 +304,88 @@ export const getCaddyBooking = async (req, res) => {
         // ไม่สามารถรับการจองที่ ถูกมอบหมายได้
         // ส่งข้อความแสดงข้อผิดพลาดกลับไปยังผู้ใช้
     }
+};
+
+export const checkUpdatedBookingStatus = async (bookingId, phase) => {
+  if (!mongoose.isValidObjectId(bookingId)) {
+    return { updated: false, reason: 'invalid bookingId' };
+  }
+
+  const booking = await Booking.findById(bookingId).select('status caddy').lean();
+  if (!booking) return { updated: false, reason: 'booking not found' };
+
+  // รองรับทั้งแบบเก็บเป็น ObjectId ตรงๆ หรือเป็น subdoc { caddy } / { caddy_id }
+  let caddyIds = [];
+  if (Array.isArray(booking.caddy)) {
+    caddyIds = booking.caddy.map(item => {
+      if (mongoose.isValidObjectId(item)) return item;
+      if (item?.caddy) return item.caddy;
+      if (item?.caddy_id) return item.caddy_id;
+      return null;
+    }).filter(Boolean);
+  }
+
+  if (caddyIds.length === 0) {
+    return { updated: false, reason: 'this booking has no caddies' };
+  }
+
+  // ดึงสถานะแคดดี้จริง
+  const caddies = await Caddy.find({ caddy_id: { $in: caddyIds } })
+    .select('caddy_id caddyStatus')
+    .lean();
+
+  // คนที่ "ไม่นับ" = ยกเลิกแล้ว
+  const cancelStates = ['cancelStart', 'cancelDuringRound'];
+
+  // เหลือเฉพาะคนที่ยัง active เพื่อนับเป็นยอดที่ต้องครบ
+  const activeCaddies = caddies.filter(c => !cancelStates.includes(c.caddyStatus));
+  const required = activeCaddies.length;
+
+  // ถ้ายกเลิกหมด ⇒ booking = 'canceled'
+  if (required === 0) {
+    if (booking.status !== 'canceled') {
+      const updated = await updateBookingStatus(bookingId, 'canceled');
+      return { updated: true, phase, newStatus: updated.status, required: 0 };
+    }
+    return { updated: false, phase, reason: 'already canceled', required: 0 };
+  }
+
+  // “จบงาน” คือ clean (เพิ่ม 'resting' ได้ถ้าต้องการ)
+  const endStates = ['clean'];
+
+  if (phase === 'afterStart') {
+    // เริ่มครบ = onGoing ของ active ครบตาม required
+    const startedCount = activeCaddies.filter(c => c.caddyStatus === 'onGoing').length;
+
+    if (startedCount >= required) {
+      if (booking.status !== 'onGoing') {
+        const updated = await updateBookingStatus(bookingId, 'onGoing');
+        return { updated: true, phase, newStatus: updated.status, startedCount, required };
+      }
+      return { updated: false, phase, reason: 'already onGoing', startedCount, required };
+    }
+    return { updated: false, phase, reason: 'not all caddies onGoing', startedCount, required };
+  }
+
+  if (phase === 'afterEnd') {
+    // จบครบ = อยู่ใน endStates ครบตาม required
+    const finishedCount = activeCaddies.filter(c => endStates.includes(c.caddyStatus)).length;
+
+    if (finishedCount >= required) {
+      // ✅ ตามที่คุณต้องการ: end ครบ (หลังหัก cancel) ⇒ completed
+      if (booking.status !== 'completed') {
+        const updated = await updateBookingStatus(bookingId, 'completed');
+        return { updated: true, phase, newStatus: updated.status, finishedCount, required };
+      }
+      return { updated: false, phase, reason: 'already completed', finishedCount, required };
+    }
+    return { updated: false, phase, reason: 'not all caddies finished', finishedCount, required };
+  }
+
+  if (phase === 'afterCancel') {
+    // เงื่อนไข canceled ถูกเช็คไว้ข้างบนแล้ว
+    return { updated: false, phase, reason: 'some caddies still active', required };
+  }
+
+  return { updated: false, reason: 'invalid phase' };
 };
