@@ -14,9 +14,9 @@ const router = express.Router();
 
 router.post("/book", protect, createBooking);
 router.get("/getbook", getBookings);
-router.put("/:id", updateBooking);
+router.put("/updatebooking/:id", updateBooking);
 //router.patch("/:id", PATCHBooking);
-router.delete("/:id", deleteBooking);
+router.delete("/deletebooking/:id", protect, deleteBooking);
 router.get("/getbyidbooked/:id", protect, getByIdBookings);
 router.get("/getbyidbookinguser", protect, getById_BookingUser);
 router.get("/today", protect, getBookingToday);
