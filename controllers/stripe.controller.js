@@ -3,6 +3,7 @@ dotenv.config();
 
 import Stripe from "stripe";
 import Booking from "../models/Booking.js";
+import { updateCaddyBooking } from "./caddy.Controller.js";
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -86,6 +87,10 @@ export const handleWebhook = async (req, res) => {
         status: "booked",
         stripeSessionId: s.id,
       });
+          if (caddies.length > 0) {
+      await updateCaddyBooking(caddies, "booked");
+    }
+    
       console.log("✅ Booking created after payment:", booking._id);
     } catch (e) {
       console.error("Webhook save error:", e);

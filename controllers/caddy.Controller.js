@@ -237,48 +237,51 @@ export const cancelDuringRound = async (req, res) => {
 
 export const getCaddyAvailable = async (req, res) => {
   try {
-    // เวลาปัจจุบันของไทย
-    const now = new Date();
-    const thailandOffset = 7 * 60; // UTC+7
+    const dateStr = req.body?.date || null; // 'YYYY-MM-DD' หรือ null
+    const { startTH, endTH } = buildThaiDayRange(dateStr);
 
-    // สร้างช่วงเวลา "เริ่มต้น" และ "สิ้นสุด" ของวัน (ตามเวลาไทย)
-    const startOfTodayTH = startOfDay(now);
-    const endOfTodayTH = endOfDay(now);
-
-    // แปลงช่วงเวลาไทย -> UTC (MongoDB เก็บเป็น UTC)
-    const startUTC = new Date(startOfTodayTH.getTime() - thailandOffset * 60000);
-    const endUTC = new Date(endOfTodayTH.getTime() - thailandOffset * 60000);
-
-    console.log("🇹🇭 Thai Time Now:", now);
-    console.log("Start of Today (TH):", startOfTodayTH);
-    console.log("End of Today (TH):", endOfTodayTH);
-    console.log("Start (UTC for Mongo):", startUTC);
-    console.log("End (UTC for Mongo):", endUTC);
-
-    // ดึง booking ที่จองภายในวันนี้ (เวลาตรงกับไทย)
+    // หา booking ของ "วันนั้น" (ตามเวลาไทย) ที่ยังไม่จบ
     const bookedBookings = await Booking.find({
-      date: { $gte: startUTC, $lte: endUTC },
-      status: { $in: ["pending", "booked", "onGoing"] } // ถ้ายังไม่จบ
+      date: { $gte: startTH, $lte: endTH },
+      status: { $in: ["pending", "booked", "onGoing"] },
+    }).select("caddy");
+
+    // รวม userId ของแคดดี้ที่ถูกจองแล้ว (booking.caddy เก็บเป็น userId)
+    const exclude = new Set();
+    for (const b of bookedBookings) {
+      if (Array.isArray(b.caddy)) {
+        for (const uid of b.caddy) exclude.add(String(uid));
+      }
+    }
+    const excludeIds = Array.from(exclude);
+
+    // เลือกเฉพาะแคดดี้ที่ยังไม่ถูกจอง (เปรียบเทียบกับ caddy.caddy_id = User._id)
+    const raw = await Caddy.find({ caddy_id: { $nin: excludeIds } })
+      .select("caddy_id name")
+      .populate("caddy_id", "img");
+
+    // ส่งผลลัพธ์แบบ "compatible ของเก่า" + กันพัง
+    const list = raw.map(c => {
+      const userId = String(c?.caddy_id?._id || c?.caddy_id || "");
+      const img = c?.caddy_id?.img || "";
+      const name = c?.name || "-";
+      return {
+        // legacy (ของเก่าต้องมี)
+        _id: userId,
+        img,
+        // กันพังเวลาหน้าบ้าน filter ด้วย name.toLowerCase()
+        name,
+        // เผื่อใช้งานต่อ
+        caddy_id: userId,
+        caddyDocId: String(c._id),
+        profilePic: img,
+      };
     });
 
-    // ดึง id ของแคดดี้ที่ถูกจองแล้ว
-    const bookedCaddyIds = bookedBookings.flatMap(b =>
-      b.caddy.map(id => id.toString())
-    );
-
-    console.log("Caddy ที่ถูกจองวันนี้:", bookedCaddyIds);
-
-    // ดึงเฉพาะแคดดี้ที่ยังไม่ถูกจอง
-    const availableCaddies = await Caddy.find({
-      _id: { $nin: bookedCaddyIds }
-    });
-
-    res.status(200).json(availableCaddies);
+    return res.status(200).json(list);
   } catch (error) {
-    console.error("❌ Failed to get available caddies:", error);
-    res.status(400).json({
-      error: error.message || "Failed to get available caddies."
-    });
+    console.error("getCaddyAvailable error:", error);
+    return res.status(500).json({ message: "Failed to get available caddies" });
   }
 };
 
@@ -389,3 +392,19 @@ export const checkUpdatedBookingStatus = async (bookingId, phase) => {
 
   return { updated: false, reason: 'invalid phase' };
 };
+
+function buildThaiDayRange(dateStr /* 'YYYY-MM-DD' | null */) {
+  if (dateStr) {
+    const startTH = new Date(`${dateStr}T00:00:00.000+07:00`);
+    const endTH   = new Date(`${dateStr}T23:59:59.999+07:00`);
+    return { startTH, endTH };
+  }
+  const now = new Date();
+  const thNow = new Date(now.getTime() + 7 * 60 * 60 * 1000); // ดันเป็นเวลาไทยชั่วคราวเพื่ออ่าน Y-M-D
+  const y = thNow.getUTCFullYear();
+  const m = String(thNow.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(thNow.getUTCDate()).padStart(2, "0");
+  const startTH = new Date(`${y}-${m}-${d}T00:00:00.000+07:00`);
+  const endTH   = new Date(`${y}-${m}-${d}T23:59:59.999+07:00`);
+  return { startTH, endTH };
+}

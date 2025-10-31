@@ -198,6 +198,8 @@ export const updateUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+      const previousRole = user.role;
+
     // 📩 ตรวจสอบว่า email ใหม่ซ้ำกับคนอื่นไหม (ยกเว้นตัวเอง)
     if (email && email !== user.email) {
       const existingEmail = await User.findOne({ email });
@@ -222,8 +224,12 @@ export const updateUser = async (req, res) => {
     // 💾 บันทึกข้อมูลใหม่
     const updatedUser = await user.save();
 
-    // 🧩 ถ้า role คือ caddy → ตรวจสอบหรือสร้าง/อัปเดตข้อมูลในตาราง Caddy
-    if (updatedUser.role === "caddy") {
+    // 🧩 จัดการเอกสาร Caddy ตามโรลที่เปลี่ยน
+    if (previousRole === "caddy" && updatedUser.role !== "caddy") {
+      // ถ้าเคยเป็น caddy แล้วเปลี่ยนเป็นโรลอื่น -> ลบออกจากโมเดล Caddy
+      await Caddy.deleteOne({ caddy_id: updatedUser._id });
+    } else if (updatedUser.role === "caddy") {
+      // ถ้ายังเป็น/เปลี่ยนมาเป็น caddy -> อัปเดต/สร้างข้อมูล Caddy ให้สอดคล้อง
       const caddy = await Caddy.findOne({ caddy_id: updatedUser._id });
       if (caddy) {
         caddy.name = updatedUser.name;
@@ -232,7 +238,7 @@ export const updateUser = async (req, res) => {
         await Caddy.create({
           caddy_id: updatedUser._id,
           name: updatedUser.name,
-          caddyStatus: "available"
+          caddyStatus: "available",
         });
       }
     }

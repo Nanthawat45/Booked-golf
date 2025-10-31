@@ -20,6 +20,6 @@ router.put("/available/:bookingId", protect, markCaddyAsAvailable);
 router.put("/cancel-start/:bookingId", protect, cancelStart);
 router.put("/cancel-during-round/:bookingId", protect, cancelDuringRound);
 
-router.get("/available-caddies", protect, getCaddyAvailable);
+router.post("/available-caddies", protect, getCaddyAvailable);
 router.get("/caddybooking", protect, getCaddyBooking);
 export default router;

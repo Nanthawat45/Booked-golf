@@ -1,6 +1,6 @@
 import Booking from "../models/Booking.js";
 import { checkItem } from "./item.controller.js";
-import {updateCaddyBooking} from "./caddy.Controller.js";
+//import {updateCaddyBooking} from "./caddy.Controller.js";
 import { createCheckoutFromDetails } from "./stripe.controller.js";
 import { startOfDay, endOfDay, addHours } from "date-fns"
 
@@ -35,13 +35,13 @@ export const createBooking = async (req, res) => {
       const overlap = await Booking.findOne({ caddy: caddyId, date: new Date(date) });
       if (overlap) return res.status(400).json({ message: `Caddy ${caddyId} is already booked.` });
     }
-    const caddyBooked = await updateCaddyBooking(caddyArray, "booked");
+    //const caddyBooked = await updateCaddyBooking(caddyArray, "booked");
 
     // สร้าง booking
     const booking = new Booking({
       user: req.user._id,
       courseType, date, timeSlot, players, groupName,
-      caddy: caddyBooked, totalPrice, isPaid: false,
+      caddy: caddyArray, totalPrice, isPaid: false,
       golfCar, golfBag, bookedGolfCarIds: golfCarId,
       bookedGolfBagIds: golfBagId, status: "pending"
     });
@@ -196,5 +196,86 @@ export const getBookingToday = async (req, res) => {
       success: false,
       message: error.message || "Failed to fetch bookings",
     });
+  }
+};
+
+const SLOTS_18 = [
+  "06:00","06:15","06:30","06:45","07:00","07:15","07:30","07:45",
+  "08:00","08:15","08:30","08:45","09:00","09:15","09:30","09:45",
+  "10:00","10:15","10:30","10:45","11:00","11:15","11:30","11:45","12:00"
+];
+const SLOTS_9 = [
+  "12:15","12:30","12:45","13:00","13:15","13:30","13:45",
+  "14:00","14:15","14:30","14:45","15:00","15:15","15:30","15:45",
+  "16:00","16:15","16:30","16:45","17:00"
+];
+
+function buildThaiDayRange(dateStr /* 'YYYY-MM-DD' | null */) {
+  if (dateStr) {
+    const startTH = new Date(`${dateStr}T00:00:00.000+07:00`);
+    const endTH   = new Date(`${dateStr}T23:59:59.999+07:00`);
+    return { startTH, endTH };
+  }
+  // ไม่ส่ง date → ใช้ “วันนี้ของไทย”
+  const now = new Date();
+  const thNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  const y = thNow.getUTCFullYear();
+  const m = String(thNow.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(thNow.getUTCDate()).padStart(2, "0");
+  const startTH = new Date(`${y}-${m}-${d}T00:00:00.000+07:00`);
+  const endTH   = new Date(`${y}-${m}-${d}T23:59:59.999+07:00`);
+  return { startTH, endTH };
+}
+
+function formatThaiTodayForResponse() {
+  const now = new Date();
+  const thNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  const y = thNow.getUTCFullYear();
+  const m = String(thNow.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(thNow.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export const getAvailableTimeSlots = async (req, res) => {
+  try {
+    const dateStr = req.body?.date || null;              // 'YYYY-MM-DD' | null
+    const courseType = req.body?.courseType || null;     // '18' | '9' | null
+    const { startTH, endTH } = buildThaiDayRange(dateStr);
+
+    // เลือกฐานเวลาตาม courseType (ไม่ส่ง -> รวมทั้งวัน)
+    let baseSlots = [];
+    if (courseType === "18") baseSlots = [...SLOTS_18];
+    else if (courseType === "9") baseSlots = [...SLOTS_9];
+    else baseSlots = [...SLOTS_18, ...SLOTS_9];
+
+    // หา booking ของวันนั้น (ตามเวลาไทย) ที่ยังไม่นับจบ
+    const query = {
+      date: { $gte: startTH, $lte: endTH },
+      status: { $in: ["pending", "booked", "onGoing"] },
+    };
+    if (courseType) query.courseType = courseType;
+
+    const bookings = await Booking.find(query).select("timeSlot").lean();
+
+    // เก็บ timeSlot ที่ถูกจอง (string) ให้ unique
+    const reservedSet = new Set();
+    for (const b of bookings) {
+      if (b.timeSlot && typeof b.timeSlot === "string") {
+        reservedSet.add(b.timeSlot);
+      }
+    }
+
+    // ตัดเวลาที่ถูกจองออก
+    const available = baseSlots.filter(t => !reservedSet.has(t));
+
+    return res.status(200).json({
+      date: dateStr ?? formatThaiTodayForResponse(), // เผื่ออยากเห็นว่ารันเป็นวันไหนเมื่อไม่ส่ง date มา
+      courseType: courseType ?? null,
+      availableTimeSlots: available,      // ✅ เวลาที่ "ยังว่าง"
+      reservedTimeSlots: Array.from(reservedSet).sort(), // ให้ไว้เผื่อ debug/แสดงผล
+    });
+  } catch (err) {
+    console.error("getAvailableTimeSlots error:", err);
+    return res.status(500).json({ message: "Failed to get available time slots" });
   }
 };
