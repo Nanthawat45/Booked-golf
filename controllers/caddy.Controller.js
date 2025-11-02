@@ -55,29 +55,25 @@ export const updateCaddyStatus = async (caddyId, newStatus) => {
     throw new Error(`Failed to update caddy status: ${error.message}`);
   }
 };
-// export const updateCaddyBooking = async (caddyId, newStatus) => {
-//   try {
-//     await Caddy.updateMany(
-//       { caddy_id: { $in: caddyId } },
-//       { $set: { caddyStatus: newStatus } }
-//     );
-//     return caddyId; 
-//   } catch (error) {
-//     throw new Error(`Failed to update caddy status: ${error.message}`);
-//   }
-// };
-export const updateCaddyBooking = async (caddyIds, newStatus) => {
-  try {
-    // อัปเดตเฉพาะแคดดี้ที่สถานะปัจจุบันเป็น "available" เท่านั้น
-    await Caddy.updateMany(
-      { _id: { $in: caddyIds }, caddyStatus: "available" }, 
-      { $set: { caddyStatus: newStatus } }
-    );
 
-    return caddyIds; 
-  } catch (error) {
-    throw new Error(`Failed to update caddy status: ${error.message}`);
-  }
+export const updateCaddyBooking = async (caddyUserIds, newStatus) => {
+  // caddyUserIds คือ array ของ User._id (จาก front)
+  const objIds = (caddyUserIds || [])
+    .filter(Boolean)
+    .map((id) => new mongoose.Types.ObjectId(String(id)));
+ 
+  // ใช้ caddy_id ไม่ใช่ _id !!
+  const result = await Caddy.updateMany(
+    { caddy_id: { $in: objIds } },        // <<< สำคัญ
+    { $set: { caddyStatus: newStatus } }
+  );
+ 
+  console.log(" Caddy.updateMany:", {
+    matchedCount: result.matchedCount,
+    modifiedCount: result.modifiedCount,
+  });
+ 
+  return result;
 };
 
 export const endRound = async (req, res) => {

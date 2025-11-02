@@ -4,6 +4,7 @@ dotenv.config();
 import Stripe from "stripe";
 import Booking from "../models/Booking.js";
 import { updateCaddyBooking } from "./caddy.Controller.js";
+import mongoose from "mongoose";
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -67,11 +68,17 @@ export const handleWebhook = async (req, res) => {
   } catch (err) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
-
+ 
   if (event.type === "checkout.session.completed") {
     const s = event.data.object;
     const md = s.metadata || {};
     try {
+      // 1) แปลง caddy (เป็น userId) → ObjectId
+      const caddies = JSON.parse(md.caddy || "[]")
+        .filter((id) => id && String(id).trim() !== "")
+        .map((id) => new mongoose.Types.ObjectId(String(id)));
+ 
+      // 2) สร้าง Booking
       const booking = await Booking.create({
         user: md.userId,
         courseType: md.courseType,
@@ -79,7 +86,7 @@ export const handleWebhook = async (req, res) => {
         timeSlot: md.timeSlot,
         players: Number(md.players || 1),
         groupName: md.groupName,
-        caddy: JSON.parse(md.caddy || "[]"),
+        caddy: caddies,               // เก็บ userIds ของแคดดี้ลง booking
         golfCar: Number(md.golfCar || 0),
         golfBag: Number(md.golfBag || 0),
         totalPrice: Number(md.totalPrice || 0),
@@ -87,16 +94,19 @@ export const handleWebhook = async (req, res) => {
         status: "booked",
         stripeSessionId: s.id,
       });
-          if (caddies.length > 0) {
-      await updateCaddyBooking(caddies, "booked");
-    }
-    
+ 
+      // 3) อัปเดตสถานะ caddy ใน collection caddies
+      if (caddies.length > 0) {
+        const r = await updateCaddyBooking(caddies, "booked");
+        console.log("🟢 updateCaddyBooking:", r);
+      }
+ 
       console.log("✅ Booking created after payment:", booking._id);
     } catch (e) {
       console.error("Webhook save error:", e);
     }
   }
-
+ 
   res.json({ received: true });
 };
 
@@ -105,91 +115,3 @@ export const getBookingBySession = async (req, res) => {
   if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
   res.json({ success: true, booking });
 };
-
-// สร้าง PaymentIntent / Checkout Session
-// export const createPaymentIntent = async (booking, userEmail) => {
-//   const customer = await stripe.customers.create({
-//     metadata: {
-//       bookingId: booking._id.toString(),
-//       userId: booking.user._id.toString(),
-//     },
-//     email: userEmail,
-//   });
-
-//   const line_items = [
-//     {
-//       price_data: {
-//         currency: "thb",
-//         product_data: {
-//           name: `Golf Booking - ${booking.courseType} holes`,
-//           description: `Group: ${booking.groupName}, Date: ${booking.date.toDateString()}`,
-//         },
-//         unit_amount: booking.totalPrice * 100,
-//       },
-//       quantity: 1,
-//     },
-//   ];
-
-//   const session = await stripe.checkout.sessions.create({
-//     payment_method_types: ["card", "promptpay"],
-//     mode: "payment",
-//     customer: customer.id,
-//     line_items,
-//     success_url: `${process.env.FRONTEND_URL}/booking?session_id={CHECKOUT_SESSION_ID}`,
-//     cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
-//   });
-
-//   return session.url;
-// };
-
-// // Webhook สำหรับอัปเดต isPaid และ status
-// export const handleWebhook = async (req, res) => {
-//   const sig = req.headers["stripe-signature"];
-//   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-//   let event;
-//   try {
-//     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-//   } catch (err) {
-//     console.error("Webhook signature verification failed:", err.message);
-//     return res.status(400).send(`Webhook Error: ${err.message}`);
-//   }
-
-//   if (event.type === "checkout.session.completed") {
-//     const session = event.data.object;
-
-//     const customer = await stripe.customers.retrieve(session.customer);
-//     const bookingId = customer.metadata.bookingId;
-
-//     if (bookingId) {
-//       const updatedBooking = await Booking.findByIdAndUpdate(
-//         bookingId,
-//         { isPaid: true, status: "booked" },
-//         { new: true }
-//       );
-//       console.log(`Booking ${bookingId} marked as paid ✅`, updatedBooking);
-//     }
-//   } else {
-//     console.log(`Unhandled event type ${event.type}`);
-//   }
-
-//   res.status(200).send("Received");
-// };
-
-// ดึง booking จาก sessionId สำหรับ Step5
-// export const getBookingBySession = async (req, res) => {
-//   try {
-//     const session = await stripe.checkout.sessions.retrieve(req.params.sessionId);
-//     const customer = await stripe.customers.retrieve(session.customer);
-//     const bookingId = customer.metadata.bookingId;
-
-//     const booking = await Booking.findById(bookingId).populate("user", "name email");
-
-//     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
-
-//     res.json({ success: true, booking });
-//   } catch (err) {
-//     console.error("Error fetching booking by session:", err);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// };
