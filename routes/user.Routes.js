@@ -16,8 +16,8 @@ import { upload, uploadToFirebase } from "../middleware/file.middleware.js";
 const router = express.Router();
 
 router.post("/admin/register", protect, authorizeRoles('admin'), upload, uploadToFirebase, registerByAdmin);
-router.post("/register", registerUser);
-router.post("/login", login);
+router.post("/register", protect, registerUser);
+router.post("/login", protect, login);
 router.get("/profile", protect, getUserProfile);
 router.get("/all", protect, getAllUser);
 router.post("/logout", protect, logout);

@@ -98,7 +98,7 @@ export const handleWebhook = async (req, res) => {
       // 3) อัปเดตสถานะ caddy ใน collection caddies
       if (caddies.length > 0) {
         const r = await updateCaddyBooking(caddies, "booked");
-        console.log("🟢 updateCaddyBooking:", r);
+        // console.log("🟢 updateCaddyBooking:", r);
       }
  
       console.log("✅ Booking created after payment:", booking._id);

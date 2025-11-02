@@ -68,10 +68,10 @@ export const updateCaddyBooking = async (caddyUserIds, newStatus) => {
     { $set: { caddyStatus: newStatus } }
   );
  
-  console.log(" Caddy.updateMany:", {
-    matchedCount: result.matchedCount,
-    modifiedCount: result.modifiedCount,
-  });
+  // console.log(" Caddy.updateMany:", {
+  //   matchedCount: result.matchedCount,
+  //   modifiedCount: result.modifiedCount,
+  // });
  
   return result;
 };
