@@ -11,11 +11,14 @@ const bookingSchema = new mongoose.Schema({
     timeSlot: { type: String, required: true },
     players: { type: Number, min: 1, max: 4, required: true },
     groupName: { type: String, required: true },
-    caddy: [{ 
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true
-        }],
+    caddy: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    required: [true],
+    validate: {
+      validator: (arr) => Array.isArray(arr) && arr.length > 0,
+      message: "ต้องเลือกแคดดี้อย่างน้อย 1 คน",
+    },
+  },
     totalPrice: { type: Number, required: true },
     isPaid: { type: Boolean, //เก็บค่าประเภท จริง/เท็จ (true/false)
         default: false //ค่าเริ่มต้นเป็น false

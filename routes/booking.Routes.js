@@ -21,6 +21,6 @@ router.delete("/deletebooking/:id", protect, authorizeRoles("admin"), deleteBook
 router.get("/getbyidbooked/:id", protect, getByIdBookings);
 router.get("/getbyidbookinguser", protect, getById_BookingUser);
 router.get("/today", protect, getBookingToday);
-router.post("/available-timeslots", protect, getAvailableTimeSlots);
+router.post("/available-timeslots", getAvailableTimeSlots);
 
 export default router;
