@@ -288,7 +288,7 @@ export const getCaddyBooking = async (req, res) => {
         const bookings = await Booking.find({ // ค้นหา Booking ที่มีแคดดี้คนนี้ถูกมอบหมาย
             caddy: caddyId, //caddy ต้องตรงกับ caddyId ที่ล็อกอินอยู่
         })
-        .select('courseType date timeSlot groupName') // เลือกเฉพาะ field ที่ต้องการ
+        .select('courseType date timeSlot groupName status') // เลือกเฉพาะ field ที่ต้องการ
         .sort({ date: 1, timeSlot: 1 }); // เรียงตามวันที่และเวลา //.sort การเรียงลำดับ
         // 1 คือ เรียงจากน้อยไปมาก (Ascending) -1 คือ เรียงจากมากไปน้อย (Descending)
         // แล้วถ้าวันที่เหมือนกัน ก็จะเรียงตาม เวลาที่จอง
