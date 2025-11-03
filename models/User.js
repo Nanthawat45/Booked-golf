@@ -10,8 +10,9 @@ const userSchema = new mongoose.Schema(
             type:String,
             enum:["user","admin","caddy","starter"],
             default:"user"
-        }
-    },{timestamps:true}
+        },
+        img:{ type: String, default: null }
+    }
 );
 
 const User = mongoose.model("User", userSchema);
