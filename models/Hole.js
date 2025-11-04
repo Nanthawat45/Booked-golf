@@ -22,6 +22,7 @@ const holeSchema = new mongoose.Schema({
     //     ]
     // },
     description: { type: String },
+    helpCarCount: { type: Number, default: 1, min: 1 , max: 4},
     status:{
         type: String,
         enum: ["open", "close", "editing", "help_car", "go_help_car"],
