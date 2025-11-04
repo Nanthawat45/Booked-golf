@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const ASSET_STATUS_ENUM = [
+const STATUS_ENUM = [
   "booked", 
   "inUse", 
   "clean", 
@@ -9,7 +9,7 @@ const ASSET_STATUS_ENUM = [
   "broken"
 ];
 
-const ASSET_TYPE_ENUM = [
+const TYPE_ENUM = [
     "golfCar", 
     "golfBag"
 ];
@@ -26,12 +26,12 @@ const itemSchema = new mongoose.Schema({
     },
   type: { 
     type: String, 
-    enum: ASSET_TYPE_ENUM,
+    enum: TYPE_ENUM,
     required: true 
   },
   status: { 
     type: String, 
-    enum: ASSET_STATUS_ENUM,
+    enum: STATUS_ENUM,
     default: "available", 
     required: true
   }
