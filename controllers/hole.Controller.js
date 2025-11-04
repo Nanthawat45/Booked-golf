@@ -1,6 +1,6 @@
 import Hole from "../models/Hole.js";
-import Booking from "../models/Booking.js";
 import Item from "../models/Item.js";
+import mongoose from "mongoose";
 
 export const close = async (req, res) => {
     const { holeNumber, description } = req.body;
@@ -124,87 +124,131 @@ export const getByIdHoles = async (req, res) => {
 }
 
 export const reportHelpCar = async (req, res) => {
-    const { holeNumber, description, bookingId } = req.body;
-    const userId = req.user._id;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { holeNumber, description = "", helpCarCount } = req.body;
+    const userId = req.user?._id;
 
-    try {
-        const hole = await Hole.findOne({ holeNumber: holeNumber });
-        if (!hole) {
-            return res.status(404).json({ message: "Hole not found." });
-        }
-        
-        // อัปเดตสถานะของหลุมและบันทึก ID การจอง
-        hole.status = "help_car";
-        hole.description = description;
-        hole.reportedBy = userId;
-        hole.bookingId = bookingId; // << จุดสำคัญที่เชื่อม Hole กับ Booking
-        
-        const updatedHole = await hole.save();
-        res.status(200).json({ 
-            message: "Help Car reported successfully.", 
-            hole: updatedHole 
-        });
-    } catch (error) {
-        res.status(500).json({ message: "An error occurred while reporting the Help Car." });
+    // --- validate ---
+    if (holeNumber === undefined || holeNumber === null) {
+      return res.status(400).json({ message: "กรุณาระบุหมายเลขหลุม (holeNumber)" });
     }
+    const count = Number(helpCarCount ?? 1);
+    if (!Number.isFinite(count) || count <= 0) {
+      return res.status(400).json({ message: "helpCarCount ต้องเป็นจำนวนเต็มบวก" });
+    }
+
+    // --- find hole ---
+    const hole = await Hole.findOne({ holeNumber }).session(session);
+    if (!hole) return res.status(404).json({ message: "ไม่พบหลุมที่ระบุ" });
+
+    // กันแจ้งซ้ำ
+    if (hole.status === 'help_car') {
+      return res.status(409).json({ message: "หลุมนี้ถูกแจ้งขอรถช่วยอยู่แล้ว" });
+    }
+
+    // --- update hole ---
+    hole.status = 'help_car';
+    hole.description = description;
+    hole.helpCarCount = count;     // เก็บจำนวนรถเสียที่แจ้ง
+    hole.reportedBy = userId || null;
+    hole.reportedAt = new Date();
+
+    const updatedHole = await hole.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(200).json({
+      message: "บันทึกการขอรถกอล์ฟช่วยสำเร็จ",
+      hole: updatedHole,
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("reportHelpCar error:", error);
+    return res.status(500).json({ message: "เกิดข้อผิดพลาดขณะบันทึกการขอรถกอล์ฟช่วย" });
+  }
 };
 
 export const resolveGoCar = async (req, res) => {
-    // รับแค่ ID ของหลุมมาก็พอ เพราะที่เหลือจะค้นหาเอง
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
     const { holeNumber } = req.body;
-    const userId = req.user._id; // ID ของผู้ใช้งานที่เข้าไปแก้ไข
+    const userId = req.user?._id;
 
-    try {
-        // 1. ค้นหา Hole ที่มีปัญหา และใช้ bookingId ที่ถูกบันทึกไว้
-        const hole = await Hole.findOne({ holeNumber: holeNumber });
-        if (!hole || !hole.bookingId) {
-            return res.status(404).json({ message: "ไม่พบข้อมูลการแจ้งปัญหาที่เกี่ยวข้องกับหลุมนี้" });
-        }
-
-        const booking = await Booking.findById(hole.bookingId);
-        if (!booking) {
-            return res.status(404).json({ message: "ไม่พบข้อมูลการจอง" });
-        }
-
-        // 2. ค้นหา 'รถคันเก่า' ที่กำลังถูกใช้งานอยู่ (inUse) จากข้อมูลการจอง
-        const oldGolfCar = await Item.findOne({ 
-            _id: { $in: booking.bookedGolfCarIds }, 
-            status: 'inUse' 
-        });
-        if (!oldGolfCar) {
-            return res.status(404).json({ message: "ไม่พบรถกอล์ฟที่กำลังใช้งานอยู่ในการจองนี้" });
-        }
-        
-        // 3. ค้นหา 'รถสำรอง' ที่มีสถานะเป็น 'spare'
-        const newGolfCar = await Item.findOne({ status: 'spare' });
-        if (!newGolfCar) {
-            return res.status(404).json({ message: "ไม่พบรถกอล์ฟสำรองที่พร้อมใช้งาน" });
-        }
-
-        // 4. อัปเดตสถานะของรถกอล์ฟ
-        oldGolfCar.status = 'broken';
-        await oldGolfCar.save();
-
-        newGolfCar.status = 'inUse';
-        await newGolfCar.save();
-
-        // 5. อัปเดตข้อมูลการจอง (Booking) เพื่อเปลี่ยนรถ
-        booking.bookedGolfCarIds = booking.bookedGolfCarIds.filter(id => id.toString() !== oldGolfCar._id.toString());
-        booking.bookedGolfCarIds.push(newGolfCar._id);
-        await booking.save();
-        
-        // 6. อัปเดตสถานะของ Hole และบันทึกผู้แก้ไข
-        hole.status = "go_help_car";
-        hole.resolvedBy = userId;
-        const updatedHole = await hole.save();
-        
-        res.status(200).json({ 
-            message: "การแก้ไขปัญหารถกอล์ฟสำเร็จ และสถานะทั้งหมดได้รับการอัปเดตแล้ว", 
-            hole: updatedHole
-        });
-        
-    } catch (error) {
-        console.error("เกิดข้อผิดพลาดในการแก้ไขปัญหา:", error);
-        res.status(500).json({ message: "เกิดข้อผิดพลาดขณะดำเนินการ" });
+    if (holeNumber === undefined || holeNumber === null) {
+      return res.status(400).json({ message: "กรุณาระบุหมายเลขหลุม (holeNumber)" });
     }
+
+    // --- hole ---
+    const hole = await Hole.findOne({ holeNumber }).session(session);
+    if (!hole || hole.status !== 'help_car') {
+      return res.status(404).json({ message: "ไม่พบการแจ้งขอรถช่วยของหลุมนี้ (หรือสถานะไม่ใช่ help_car)" });
+    }
+
+    const need = Number(hole.helpCarCount ?? 1);
+    if (!Number.isFinite(need) || need <= 0) {
+      return res.status(400).json({ message: "จำนวนรถที่ต้องสลับ (helpCarCount) ไม่ถูกต้อง" });
+    }
+
+    // --- หารถตามจำนวน ---
+    // 1) เอา available -> spare
+    const availableCars = await Item.find({
+      type: 'golfCar',
+      status: 'available',
+    }).limit(need).session(session);
+
+    if (availableCars.length < need) {
+      return res.status(404).json({ message: `รถสถานะ available ไม่พอ ต้องการ ${need} คัน` });
+    }
+
+    // 2) เอา spare -> broken
+    const spareCars = await Item.find({
+      type: 'golfCar',
+      status: 'spare',
+    }).limit(need).session(session);
+
+    if (spareCars.length < need) {
+      return res.status(404).json({ message: `รถสถานะ spare ไม่พอ ต้องการ ${need} คัน` });
+    }
+
+    // --- อัปเดตสถานะทั้งหมด (ใน transaction) ---
+    // available -> spare
+    for (const car of availableCars) {
+      car.status = 'spare';
+      await car.save({ session });
+    }
+
+    // spare -> broken
+    for (const car of spareCars) {
+      car.status = 'broken';
+      await car.save({ session });
+    }
+
+    // --- ปิดเคสหลุม ---
+    //hole.status = 'go_help_car'; // แก้ใช้นี้ open ไปก่อน 
+    hole.status = 'open';
+    hole.resolvedBy = userId || null;
+    hole.resolvedAt = new Date();
+    // ถ้าต้องการเคลียร์ count หลังแก้แล้ว:
+    // hole.helpCarCount = 0;
+
+    const updatedHole = await hole.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(200).json({
+      message: `ดำเนินการสลับคลังรถสำรองสำเร็จ: available→spare และ spare→broken จำนวน ${need} คัน`,
+      hole: updatedHole,
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("resolveGoCar error:", error);
+    return res.status(500).json({ message: "เกิดข้อผิดพลาดขณะดำเนินการสลับรถ" });
+  }
 };
