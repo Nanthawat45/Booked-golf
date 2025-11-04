@@ -21,7 +21,7 @@
     "express": "^5.1.0",
     "firebase": "^12.3.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.18.3",
+    "mongoose": "^8.19.2",
     "multer": "^2.0.2",
     "stripe": "^18.5.0",
     "swagger-jsdoc": "^6.2.8",
