@@ -28,16 +28,16 @@
  *             properties:
  *               name:
  *                 type: string
- *                 example: John Doe
+ *                 example: "Aa2 Test"
  *               phone:
  *                 type: string
- *                 example: "0812345678"
+ *                 example: "0812223333"
  *               email:
  *                 type: string
- *                 example: john@example.com
+ *                 example: "aa2@gmail.com"
  *               password:
  *                 type: string
- *                 example: "123456"
+ *                 example: "Nn123456789"
  *               role:
  *                 type: string
  *                 example: "user"
@@ -75,14 +75,19 @@
  *             properties:
  *               name:
  *                 type: string
+ *                 example: "Caddy One"
  *               phone:
  *                 type: string
+ *                 example: "0822222222"
  *               email:
  *                 type: string
+ *                 example: "caddy1@example.com"
  *               password:
  *                 type: string
+ *                 example: "CaddyP@ss1"
  *               role:
  *                 type: string
+ *                 example: "caddy"
  *               img:
  *                 type: string
  *                 format: binary
@@ -115,10 +120,10 @@
  *             properties:
  *               email:
  *                 type: string
- *                 example: u1@gmail.com
+ *                 example: "aa2@gmail.com"
  *               password:
  *                 type: string
- *                 example: "123456"
+ *                 example: "Nn123456789"
  *     responses:
  *       200:
  *         description: เข้าสู่ระบบสำเร็จ
@@ -139,7 +144,7 @@
  *                   type: string
  *                 token:
  *                   type: string
- *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *       401:
  *         description: ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง
  */
@@ -228,4 +233,73 @@
  *         description: ข้อมูลผู้ใช้
  *       404:
  *         description: ไม่พบผู้ใช้งาน
+ */
+
+/* ---------- Update User ---------- */
+/**
+ * @swagger
+ * /user/updateuser/{id}:
+ *   put:
+ *     summary: อัพเดตข้อมูลผู้ใช้ (Admin/Owner)
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       description: ฟอร์มอัปเดตข้อมูลผู้ใช้
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *               img:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: อัพเดตผู้ใช้สำเร็จ
+ *       404:
+ *         description: ไม่พบผู้ใช้งาน
+ */
+
+/* ---------- Get All Not User ---------- */
+/**
+ * @swagger
+ * /user/allnotuser:
+ *   get:
+ *     summary: ดึงข้อมูลพนักงานทั้งหมด (ไม่รวม user)
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: ข้อมูลผู้ใช้ที่ไม่ใช่ user
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  */

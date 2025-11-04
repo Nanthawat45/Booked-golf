@@ -5,14 +5,68 @@
  *     description: จัดการงานของแคดดี้
  */
 
+/**
+ * @swagger
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ *   schemas:
+ *     CaddyActionResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           example: "Round started successfully. All assets and caddies are now in use."
+ *         booking:
+ *           type: object
+ *           description: "ข้อมูลสรุปหลังอัปเดตสถานะการจอง (จาก checkUpdatedBookingStatus)"
+ *           properties:
+ *             updated: { type: boolean, example: true }
+ *             phase: { type: string, example: "afterStart" }
+ *             newStatus: { type: string, example: "onGoing" }
+ *             startedCount: { type: integer, example: 3 }
+ *             finishedCount: { type: integer, example: 0 }
+ *             required: { type: integer, example: 3 }
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           example: "Booking not found."
+ *     CaddyAvailableListItem:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: "userId ของแคดดี้"
+ *           example: "671fa3d9f0a3f2b1c9b01234"
+ *         img:
+ *           type: string
+ *           example: "https://example.com/avatar.png"
+ *         name:
+ *           type: string
+ *           example: "Caddy One"
+ *         caddy_id:
+ *           type: string
+ *           example: "671fa3d9f0a3f2b1c9b01234"
+ *         caddyDocId:
+ *           type: string
+ *           example: "6720aa11bb22cc33dd445566"
+ *         profilePic:
+ *           type: string
+ *           example: "https://example.com/avatar.png"
+ */
+
 /* ---------- Caddy เริ่มรอบ ---------- */
 /**
  * @swagger
  * /caddy/start/{bookingId}:
  *   put:
  *     summary: แคดดี้เริ่มรอบการเล่น
- *     tags:
- *       - Caddy
+ *     tags: [Caddy]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -21,15 +75,24 @@
  *         required: true
  *         schema:
  *           type: string
+ *           example: "6720b68b2b9c0b4ea1f9abcd"
  *     responses:
- *       "200":
+ *       200:
  *         description: เริ่มรอบเรียบร้อย
- *       "401":
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CaddyActionResponse'
+ *       401:
  *         description: ต้องเข้าสู่ระบบ
- *       "403":
+ *       403:
  *         description: สิทธิ์ไม่เพียงพอ
- *       "404":
+ *       404:
  *         description: ไม่พบการจอง
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 
 /* ---------- Caddy จบรอบ ---------- */
@@ -38,8 +101,7 @@
  * /caddy/end/{bookingId}:
  *   put:
  *     summary: แคดดี้จบรอบการเล่น
- *     tags:
- *       - Caddy
+ *     tags: [Caddy]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -48,34 +110,43 @@
  *         required: true
  *         schema:
  *           type: string
+ *           example: "6720b68b2b9c0b4ea1f9abcd"
  *     responses:
- *       "200":
+ *       200:
  *         description: จบรอบเรียบร้อย
- *       "401":
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CaddyActionResponse'
+ *       401:
  *         description: ต้องเข้าสู่ระบบ
- *       "403":
+ *       403:
  *         description: สิทธิ์ไม่เพียงพอ
- *       "404":
+ *       404:
  *         description: ไม่พบการจอง
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 
-/* ---------- Caddy แคดดี้ทำความสอาดเสร็จ ---------- */
+/* ---------- Caddy ทำความสะอาดเสร็จ (พร้อมใช้งาน) ---------- */
 /**
  * @swagger
  * /caddy/available/{bookingId}:
  *   put:
  *     summary: แคดดี้แจ้งสถานะว่าว่างหลังจากทำความสะอาดอุปกรณ์
- *     description: ใช้สำหรับแคดดี้ในการปลดตัวเองออกจากสถานะ 'cleaning' และเปลี่ยนอุปกรณ์ที่อยู่ใน booking ให้เป็น 'available'
+ *     description: ปลดสถานะแคดดี้จาก 'clean'/'cleaning' ไปเป็น 'available' และปลดอุปกรณ์จาก booking เป็น 'available'
  *     tags: [Caddy]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: bookingId
- *         in: path
+ *       - in: path
+ *         name: bookingId
  *         required: true
- *         description: รหัสของการจองที่แคดดี้ถูกมอบหมาย
  *         schema:
  *           type: string
+ *           example: "6720b68b2b9c0b4ea1f9abcd"
  *     responses:
  *       200:
  *         description: อัปเดตสถานะเรียบร้อยแล้ว
@@ -86,75 +157,83 @@
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Caddy 'John Doe' and associated assets are now available.
+ *                   example: "Caddy and related assets are now available."
  *                 caddy:
  *                   type: object
- *                   properties:
- *                     _id:
- *                       type: string
- *                     name:
- *                       type: string
- *                     email:
- *                       type: string
- *                     role:
- *                       type: string
- *                       example: caddy
- *                     caddyStatus:
- *                       type: string
- *                       example: available
- *                 bookingIdAcknowledged:
- *                   type: string
+ *                   nullable: true
  *       400:
- *         description: สถานะของแคดดี้ไม่ใช่ 'cleaning' หรือสถานะของ asset ไม่ถูกต้อง
+ *         description: สถานะไม่ถูกต้อง
  *       403:
- *         description: ไม่ใช่แคดดี้ หรือไม่ได้ถูกมอบหมายให้ booking นี้
+ *         description: ไม่ใช่แคดดี้ที่รับงาน หรือไม่ได้ถูกมอบหมายให้ booking นี้
  *       404:
- *         description: ไม่พบ booking หรือ caddy
+ *         description: ไม่พบ booking/caddy
  *       500:
  *         description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
  */
 
 /* ---------- Caddy ยกเลิกก่อนเริ่ม ---------- */
- /**
-  * @swagger
-  * /caddy/cancel-start/{bookingId}:
-  *   put:
-  *     summary: แคดดี้ยกเลิกงานก่อนเริ่มรอบ
-  *     tags: [Caddy]
-  *     security: [ { bearerAuth: [] } ]
-  *     parameters:
-  *       - in: path
-  *         name: bookingId
-  *         required: true
-  *         schema: { type: string }
-  *     responses:
-  *       200: { description: ยกเลิกก่อนเริ่มเรียบร้อย }
-  *       401: { description: ต้องเข้าสู่ระบบ }
-  *       403: { description: สิทธิ์ไม่เพียงพอ }
-  *       404: { description: ไม่พบการจอง }
-  */
+/**
+ * @swagger
+ * /caddy/cancel-start/{bookingId}:
+ *   put:
+ *     summary: แคดดี้ยกเลิกงานก่อนเริ่มรอบ
+ *     tags: [Caddy]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookingId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "6720b68b2b9c0b4ea1f9abcd"
+ *     responses:
+ *       200:
+ *         description: ยกเลิกก่อนเริ่มเรียบร้อย
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CaddyActionResponse'
+ *       401:
+ *         description: ต้องเข้าสู่ระบบ
+ *       403:
+ *         description: สิทธิ์ไม่เพียงพอ
+ *       404:
+ *         description: ไม่พบการจอง
+ */
 
- /* ---------- Caddy ยกเลิกระหว่างรอบ ---------- */
- /**
-  * @swagger
-  * /caddy/cancel-during-round/{bookingId}:
-  *   put:
-  *     summary: แคดดี้ยกเลิกงานระหว่างรอบ
-  *     tags: [Caddy]
-  *     security: [ { bearerAuth: [] } ]
-  *     parameters:
-  *       - in: path
-  *         name: bookingId
-  *         required: true
-  *         schema: { type: string }
-  *     responses:
-  *       200: { description: ยกเลิกระหว่างรอบเรียบร้อย }
-  *       401: { description: ต้องเข้าสู่ระบบ }
-  *       403: { description: สิทธิ์ไม่เพียงพอ }
-  *       404: { description: ไม่พบการจอง }
-  */
+/* ---------- Caddy ยกเลิกระหว่างรอบ ---------- */
+/**
+ * @swagger
+ * /caddy/cancel-during-round/{bookingId}:
+ *   put:
+ *     summary: แคดดี้ยกเลิกงานระหว่างรอบ
+ *     tags: [Caddy]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookingId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "6720b68b2b9c0b4ea1f9abcd"
+ *     responses:
+ *       200:
+ *         description: ยกเลิกระหว่างรอบเรียบร้อย
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CaddyActionResponse'
+ *       401:
+ *         description: ต้องเข้าสู่ระบบ
+ *       403:
+ *         description: สิทธิ์ไม่เพียงพอ
+ *       404:
+ *         description: ไม่พบการจอง
+ */
 
-/* ---------- Caddy แคดดี้ดูรายการจอง ---------- */
+/* ---------- Caddy ดูรายการที่ตนเองถูกมอบหมาย ---------- */
 /**
  * @swagger
  * /caddy/caddybooking:
@@ -173,23 +252,48 @@
  *               items:
  *                 type: object
  *                 properties:
- *                   _id:
- *                     type: string
- *                   date:
- *                     type: string
- *                     format: date
- *                   timeSlot:
- *                     type: string
- *                   groupName:
- *                     type: string
- *                   courseType:
- *                     type: string
- *                   players:
- *                     type: array
- *                     items:
- *                       type: string
+ *                   courseType: { type: string, example: "18-hole" }
+ *                   date: { type: string, format: date, example: "2025-11-04" }
+ *                   timeSlot: { type: string, example: "07:00-09:00" }
+ *                   groupName: { type: string, example: "Ohm Group" }
+ *                   status: { type: string, example: "booked" }
  *       401:
  *         description: ต้องเข้าสู่ระบบ
  *       403:
  *         description: สิทธิ์ไม่เพียงพอ (ต้องเป็น caddy)
+ */
+
+/* ---------- หาแคดดี้ที่ว่าง (ตามวัน) ---------- */
+/**
+ * @swagger
+ * /caddy/available-caddies:
+ *   post:
+ *     summary: ค้นหาแคดดี้ที่ว่างตามวันที่กำหนด (เวลาไทย)
+ *     tags: [Caddy]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               date:
+ *                 type: string
+ *                 description: วันที่รูปแบบ YYYY-MM-DD (ถ้าไม่ส่ง จะใช้วันนี้ตามเวลาไทย)
+ *                 example: "2025-11-04"
+ *     responses:
+ *       200:
+ *         description: รายการแคดดี้ที่ว่าง
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/CaddyAvailableListItem'
+ *       401:
+ *         description: ต้องเข้าสู่ระบบ
+ *       500:
+ *         description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
  */
