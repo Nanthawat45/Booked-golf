@@ -8,11 +8,6 @@
 /**
  * @swagger
  * components:
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
  *   schemas:
  *     CaddyActionResponse:
  *       type: object
@@ -24,18 +19,24 @@
  *           type: object
  *           description: "ข้อมูลสรุปหลังอัปเดตสถานะการจอง (จาก checkUpdatedBookingStatus)"
  *           properties:
- *             updated: { type: boolean, example: true }
- *             phase: { type: string, example: "afterStart" }
- *             newStatus: { type: string, example: "onGoing" }
- *             startedCount: { type: integer, example: 3 }
- *             finishedCount: { type: integer, example: 0 }
- *             required: { type: integer, example: 3 }
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         message:
- *           type: string
- *           example: "Booking not found."
+ *             updated:
+ *               type: boolean
+ *               example: true
+ *             phase:
+ *               type: string
+ *               example: "afterStart"
+ *             newStatus:
+ *               type: string
+ *               example: "onGoing"
+ *             startedCount:
+ *               type: integer
+ *               example: 3
+ *             finishedCount:
+ *               type: integer
+ *               example: 0
+ *             required:
+ *               type: integer
+ *               example: 3
  *     CaddyAvailableListItem:
  *       type: object
  *       properties:
@@ -60,7 +61,6 @@
  *           example: "https://example.com/avatar.png"
  */
 
-/* ---------- Caddy เริ่มรอบ ---------- */
 /**
  * @swagger
  * /caddy/start/{bookingId}:
@@ -95,7 +95,6 @@
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 
-/* ---------- Caddy จบรอบ ---------- */
 /**
  * @swagger
  * /caddy/end/{bookingId}:
@@ -130,7 +129,6 @@
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 
-/* ---------- Caddy ทำความสะอาดเสร็จ (พร้อมใช้งาน) ---------- */
 /**
  * @swagger
  * /caddy/available/{bookingId}:
@@ -171,7 +169,6 @@
  *         description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
  */
 
-/* ---------- Caddy ยกเลิกก่อนเริ่ม ---------- */
 /**
  * @swagger
  * /caddy/cancel-start/{bookingId}:
@@ -202,7 +199,6 @@
  *         description: ไม่พบการจอง
  */
 
-/* ---------- Caddy ยกเลิกระหว่างรอบ ---------- */
 /**
  * @swagger
  * /caddy/cancel-during-round/{bookingId}:
@@ -233,7 +229,6 @@
  *         description: ไม่พบการจอง
  */
 
-/* ---------- Caddy ดูรายการที่ตนเองถูกมอบหมาย ---------- */
 /**
  * @swagger
  * /caddy/caddybooking:
@@ -252,48 +247,24 @@
  *               items:
  *                 type: object
  *                 properties:
- *                   courseType: { type: string, example: "18-hole" }
- *                   date: { type: string, format: date, example: "2025-11-04" }
- *                   timeSlot: { type: string, example: "07:00-09:00" }
- *                   groupName: { type: string, example: "Ohm Group" }
- *                   status: { type: string, example: "booked" }
+ *                   courseType:
+ *                     type: string
+ *                     example: "18-hole"
+ *                   date:
+ *                     type: string
+ *                     format: date
+ *                     example: "2025-11-04"
+ *                   timeSlot:
+ *                     type: string
+ *                     example: "07:00-09:00"
+ *                   groupName:
+ *                     type: string
+ *                     example: "Ohm Group"
+ *                   status:
+ *                     type: string
+ *                     example: "booked"
  *       401:
  *         description: ต้องเข้าสู่ระบบ
  *       403:
  *         description: สิทธิ์ไม่เพียงพอ (ต้องเป็น caddy)
- */
-
-/* ---------- หาแคดดี้ที่ว่าง (ตามวัน) ---------- */
-/**
- * @swagger
- * /caddy/available-caddies:
- *   post:
- *     summary: ค้นหาแคดดี้ที่ว่างตามวันที่กำหนด (เวลาไทย)
- *     tags: [Caddy]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: false
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               date:
- *                 type: string
- *                 description: วันที่รูปแบบ YYYY-MM-DD (ถ้าไม่ส่ง จะใช้วันนี้ตามเวลาไทย)
- *                 example: "2025-11-04"
- *     responses:
- *       200:
- *         description: รายการแคดดี้ที่ว่าง
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/CaddyAvailableListItem'
- *       401:
- *         description: ต้องเข้าสู่ระบบ
- *       500:
- *         description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
  */

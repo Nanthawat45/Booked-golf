@@ -8,11 +8,6 @@
 /**
  * @swagger
  * components:
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
  *   schemas:
  *     Item:
  *       type: object
@@ -48,36 +43,53 @@
  *         golfCar:
  *           type: object
  *           properties:
- *             booked:   { type: integer, example: 2 }
- *             inUse:    { type: integer, example: 4 }
- *             clean:    { type: integer, example: 1 }
- *             available:{ type: integer, example: 10 }
- *             spare:    { type: integer, example: 1 }
- *             broken:   { type: integer, example: 0 }
+ *             booked:
+ *               type: integer
+ *               example: 2
+ *             inUse:
+ *               type: integer
+ *               example: 4
+ *             clean:
+ *               type: integer
+ *               example: 1
+ *             available:
+ *               type: integer
+ *               example: 10
+ *             spare:
+ *               type: integer
+ *               example: 1
+ *             broken:
+ *               type: integer
+ *               example: 0
  *         golfBag:
  *           type: object
  *           properties:
- *             booked:   { type: integer, example: 1 }
- *             inUse:    { type: integer, example: 3 }
- *             clean:    { type: integer, example: 2 }
- *             available:{ type: integer, example: 15 }
- *             spare:    { type: integer, example: 0 }
- *             broken:   { type: integer, example: 1 }
+ *             booked:
+ *               type: integer
+ *               example: 1
+ *             inUse:
+ *               type: integer
+ *               example: 3
+ *             clean:
+ *               type: integer
+ *               example: 2
+ *             available:
+ *               type: integer
+ *               example: 15
+ *             spare:
+ *               type: integer
+ *               example: 0
+ *             broken:
+ *               type: integer
+ *               example: 1
  *     DeleteResponse:
  *       type: object
  *       properties:
  *         message:
  *           type: string
  *           example: "Item deleted successfully"
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         message:
- *           type: string
- *           example: "Server error"
  */
 
-/* ---------- เพิ่ม Item ---------- */
 /**
  * @swagger
  * /item/additem:
@@ -125,7 +137,6 @@
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 
-/* ---------- ดึง Item ตาม ID ---------- */
 /**
  * @swagger
  * /item/getbyiditem/{id}:
@@ -163,7 +174,6 @@
  *         description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
  */
 
-/* ---------- ลบ Item ---------- */
 /**
  * @swagger
  * /item/{id}:
@@ -203,7 +213,6 @@
  *         description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
  */
 
-/* ---------- ดูรายการรถกอล์ฟทั้งหมด ---------- */
 /**
  * @swagger
  * /item/getitemcar:
@@ -229,7 +238,6 @@
  *         description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
  */
 
-/* ---------- ดูรายการถุงกอล์ฟทั้งหมด ---------- */
 /**
  * @swagger
  * /item/getitembag:
@@ -255,7 +263,6 @@
  *         description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
  */
 
-/* ---------- ดูสรุปสถานะ Item ---------- */
 /**
  * @swagger
  * /item/all-status:

@@ -8,11 +8,6 @@
 /**
  * @swagger
  * components:
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
  *   schemas:
  *     BookingRequest:
  *       type: object
@@ -31,7 +26,8 @@
  *           example: "07:00"
  *         players:
  *           type: array
- *           items: { type: string }
+ *           items:
+ *             type: string
  *           example: ["Ohm", "A", "B", "C"]
  *         groupName:
  *           type: string
@@ -40,7 +36,8 @@
  *           oneOf:
  *             - type: string
  *             - type: array
- *               items: { type: string }
+ *               items:
+ *                 type: string
  *           example: ["671fa3d9f0a3f2b1c9b0c001", "671fa3d9f0a3f2b1c9b0c002"]
  *         totalPrice:
  *           type: number
@@ -55,28 +52,53 @@
  *     Booking:
  *       type: object
  *       properties:
- *         _id:            { type: string, example: "6720b68b2b9c0b4ea1f9abcd" }
- *         user:           { type: string, example: "671fa3d9f0a3f2b1c9b01234" }
- *         courseType:     { type: string, example: "18" }
- *         date:           { type: string, format: date-time, example: "2025-11-04T00:00:00.000Z" }
- *         timeSlot:       { type: string, example: "07:00" }
+ *         _id:
+ *           type: string
+ *           example: "6720b68b2b9c0b4ea1f9abcd"
+ *         user:
+ *           type: string
+ *           example: "671fa3d9f0a3f2b1c9b01234"
+ *         courseType:
+ *           type: string
+ *           example: "18"
+ *         date:
+ *           type: string
+ *           format: date-time
+ *           example: "2025-11-04T00:00:00.000Z"
+ *         timeSlot:
+ *           type: string
+ *           example: "07:00"
  *         players:
  *           type: array
- *           items: { type: string }
- *         groupName:      { type: string, example: "TTT1" }
+ *           items:
+ *             type: string
+ *         groupName:
+ *           type: string
+ *           example: "TTT1"
  *         caddy:
  *           type: array
- *           items: { type: string }
- *         totalPrice:     { type: number, example: 4600 }
- *         isPaid:         { type: boolean, example: false }
- *         golfCar:        { type: integer, example: 1 }
- *         golfBag:        { type: integer, example: 2 }
+ *           items:
+ *             type: string
+ *         totalPrice:
+ *           type: number
+ *           example: 4600
+ *         isPaid:
+ *           type: boolean
+ *           example: false
+ *         golfCar:
+ *           type: integer
+ *           example: 1
+ *         golfBag:
+ *           type: integer
+ *           example: 2
  *         bookedGolfCarIds:
  *           type: array
- *           items: { type: string }
+ *           items:
+ *             type: string
  *         bookedGolfBagIds:
  *           type: array
- *           items: { type: string }
+ *           items:
+ *             type: string
  *         status:
  *           type: string
  *           enum: [pending, booked, onGoing, completed, canceled]
@@ -86,9 +108,15 @@
  *       type: object
  *       description: "ผลลัพธ์การสร้าง Stripe Checkout (shape มาจาก stripe.controller.js)"
  *       properties:
- *         success:  { type: boolean, example: true }
- *         url:      { type: string, example: "https://checkout.stripe.com/c/pay_cs_test_..." }
- *         sessionId:{ type: string, example: "cs_test_a1B2C3..." }
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         url:
+ *           type: string
+ *           example: "https://checkout.stripe.com/c/pay_cs_test_..."
+ *         sessionId:
+ *           type: string
+ *           example: "cs_test_a1B2C3..."
  *
  *     TimeSlotsRequest:
  *       type: object
@@ -105,32 +133,33 @@
  *     TimeSlotsResponse:
  *       type: object
  *       properties:
- *         date:         { type: string, example: "2025-11-04" }
- *         courseType:   { type: string, nullable: true, example: "18" }
+ *         date:
+ *           type: string
+ *           example: "2025-11-04"
+ *         courseType:
+ *           type: string
+ *           nullable: true
+ *           example: "18"
  *         availableTimeSlots:
  *           type: array
- *           items: { type: string }
+ *           items:
+ *             type: string
  *           example: ["06:00","06:15","06:30","06:45","07:15"]
  *         reservedTimeSlots:
  *           type: array
- *           items: { type: string }
+ *           items:
+ *             type: string
  *           example: ["07:00","08:00","09:00"]
- *
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         message: { type: string, example: "Server error" }
  */
 
-/* ---------- สร้างการจอง (จ่ายก่อนค่อยบันทึก) ---------- */
 /**
  * @swagger
  * /booking/book:
  *   post:
  *     summary: สร้างการจองใหม่ + สร้าง Stripe Checkout
  *     description: |
- *       - ตรวจสอบซ้ำซ้อนเวลา/คิว  
- *       - จองสินทรัพย์ (golfCar/golfBag) ชั่วคราวเป็นสถานะ "booked"  
+ *       - ตรวจสอบซ้ำซ้อนเวลา/คิว
+ *       - จองสินทรัพย์ (golfCar/golfBag) ชั่วคราวเป็นสถานะ "booked"
  *       - คืนลิงก์ Stripe Checkout เพื่อให้ลูกค้าชำระเงิน
  *     tags: [Booking]
  *     security:
@@ -164,10 +193,10 @@
  *         description: ข้อมูลไม่ถูกต้องหรืออุปกรณ์ไม่เพียงพอ / มีการจองเวลานี้แล้ว
  *         content:
  *           application/json:
- *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 
-/* ---------- ดูการจองทั้งหมด (สำหรับแอดมิน/สตาร์ทเตอร์หรือสิทธิ์ที่เหมาะสม) ---------- */
 /**
  * @swagger
  * /booking/getbook:
@@ -183,10 +212,10 @@
  *           application/json:
  *             schema:
  *               type: array
- *               items: { $ref: '#/components/schemas/Booking' }
+ *               items:
+ *                 $ref: '#/components/schemas/Booking'
  */
 
-/* ---------- แก้ไขเวลาการจอง ---------- */
 /**
  * @swagger
  * /booking/updatebooking/{id}:
@@ -199,7 +228,8 @@
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: string }
+ *         schema:
+ *           type: string
  *     requestBody:
  *       required: true
  *       content:
@@ -219,15 +249,17 @@
  *             schema:
  *               type: object
  *               properties:
- *                 message: { type: string, example: "Booking updated successfully" }
- *                 booking: { $ref: '#/components/schemas/Booking' }
+ *                 message:
+ *                   type: string
+ *                   example: "Booking updated successfully"
+ *                 booking:
+ *                   $ref: '#/components/schemas/Booking'
  *       400:
  *         description: ข้อมูลไม่ถูกต้อง
  *       404:
  *         description: ไม่พบการจอง
  */
 
-/* ---------- ลบการจอง ---------- */
 /**
  * @swagger
  * /booking/deletebooking/{id}:
@@ -240,7 +272,8 @@
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: string }
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: ลบสำเร็จ
@@ -249,12 +282,13 @@
  *             schema:
  *               type: object
  *               properties:
- *                 message: { type: string, example: "Booking deleted successfully" }
+ *                 message:
+ *                   type: string
+ *                   example: "Booking deleted successfully"
  *       404:
  *         description: ไม่พบการจอง
  */
 
-/* ---------- ดูการจองตาม ID ---------- */
 /**
  * @swagger
  * /booking/getbyidbooked/{id}:
@@ -267,18 +301,19 @@
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: string }
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: สำเร็จ
  *         content:
  *           application/json:
- *             schema: { $ref: '#/components/schemas/Booking' }
+ *             schema:
+ *               $ref: '#/components/schemas/Booking'
  *       404:
  *         description: ไม่พบการจอง
  */
 
-/* ---------- ดึงการจองทั้งหมดของผู้ใช้ที่ล็อกอิน ---------- */
 /**
  * @swagger
  * /booking/getbyidbookinguser:
@@ -294,12 +329,12 @@
  *           application/json:
  *             schema:
  *               type: array
- *               items: { $ref: '#/components/schemas/Booking' }
+ *               items:
+ *                 $ref: '#/components/schemas/Booking'
  *       404:
  *         description: ไม่พบรายการของผู้ใช้
  */
 
-/* ---------- ดึงการจองของ 'วัน' ที่กำหนด (เวลาไทย) ---------- */
 /**
  * @swagger
  * /booking/today:
@@ -323,9 +358,15 @@
  *             schema:
  *               type: object
  *               properties:
- *                 success: { type: boolean, example: true }
- *                 date:    { type: string, example: "today" }
- *                 count:   { type: integer, example: 3 }
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 date:
+ *                   type: string
+ *                   example: "today"
+ *                 count:
+ *                   type: integer
+ *                   example: 3
  *                 bookings:
  *                   type: array
  *                   items:
@@ -339,7 +380,6 @@
  *                             example: "2025-11-04T07:00:00.000+07:00"
  */
 
-/* ---------- คำนวณช่องเวลาที่ว่าง ---------- */
 /**
  * @swagger
  * /booking/available-timeslots:
@@ -350,7 +390,8 @@
  *       required: false
  *       content:
  *         application/json:
- *           schema:  { $ref: '#/components/schemas/TimeSlotsRequest' }
+ *           schema:
+ *             $ref: '#/components/schemas/TimeSlotsRequest'
  *           examples:
  *             for18:
  *               value: { "date": "2025-11-04", "courseType": "18" }
@@ -361,7 +402,8 @@
  *         description: สำเร็จ
  *         content:
  *           application/json:
- *             schema: { $ref: '#/components/schemas/TimeSlotsResponse' }
+ *             schema:
+ *               $ref: '#/components/schemas/TimeSlotsResponse'
  *       500:
  *         description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
  */

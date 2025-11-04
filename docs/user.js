@@ -5,7 +5,6 @@
  *     description: การจัดการผู้ใช้งานระบบ
  */
 
-/* ---------- Register User ---------- */
 /**
  * @swagger
  * /user/register:
@@ -19,12 +18,7 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - name
- *               - phone
- *               - email
- *               - password
- *               - role
+ *             required: [name, phone, email, password, role]
  *             properties:
  *               name:
  *                 type: string
@@ -50,7 +44,6 @@
  *         description: Server error
  */
 
-/* ---------- Register User by Admin ---------- */
 /**
  * @swagger
  * /user/admin/register:
@@ -66,28 +59,13 @@
  *         multipart/form-data:
  *           schema:
  *             type: object
- *             required:
- *               - name
- *               - phone
- *               - email
- *               - password
- *               - role
+ *             required: [name, phone, email, password, role]
  *             properties:
- *               name:
- *                 type: string
- *                 example: "Caddy One"
- *               phone:
- *                 type: string
- *                 example: "0822222222"
- *               email:
- *                 type: string
- *                 example: "caddy1@example.com"
- *               password:
- *                 type: string
- *                 example: "CaddyP@ss1"
- *               role:
- *                 type: string
- *                 example: "caddy"
+ *               name: { type: string, example: "Caddy One" }
+ *               phone: { type: string, example: "0822222222" }
+ *               email: { type: string, example: "caddy1@example.com" }
+ *               password: { type: string, example: "CaddyP@ss1" }
+ *               role: { type: string, example: "caddy" }
  *               img:
  *                 type: string
  *                 format: binary
@@ -100,7 +78,6 @@
  *         description: Server error
  */
 
-/* ---------- Login ---------- */
 /**
  * @swagger
  * /user/login:
@@ -114,9 +91,7 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - email
- *               - password
+ *             required: [email, password]
  *             properties:
  *               email:
  *                 type: string
@@ -132,16 +107,11 @@
  *             schema:
  *               type: object
  *               properties:
- *                 _id:
- *                   type: string
- *                 name:
- *                   type: string
- *                 phone:
- *                   type: string
- *                 email:
- *                   type: string
- *                 role:
- *                   type: string
+ *                 _id: { type: string }
+ *                 name: { type: string }
+ *                 phone: { type: string }
+ *                 email: { type: string }
+ *                 role: { type: string }
  *                 token:
  *                   type: string
  *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -149,7 +119,6 @@
  *         description: ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง
  */
 
-/* ---------- Logout ---------- */
 /**
  * @swagger
  * /user/logout:
@@ -163,7 +132,6 @@
  *         description: ออกจากระบบสำเร็จ
  */
 
-/* ---------- Get User Profile ---------- */
 /**
  * @swagger
  * /user/profile:
@@ -180,23 +148,16 @@
  *             schema:
  *               type: object
  *               properties:
- *                 _id:
- *                   type: string
- *                 name:
- *                   type: string
- *                 phone:
- *                   type: string
- *                 email:
- *                   type: string
- *                 role:
- *                   type: string
- *                 img:
- *                   type: string
+ *                 _id: { type: string }
+ *                 name: { type: string }
+ *                 phone: { type: string }
+ *                 email: { type: string }
+ *                 role: { type: string }
+ *                 img:  { type: string }
  *       404:
  *         description: ไม่พบผู้ใช้งาน
  */
 
-/* ---------- Get All Users ---------- */
 /**
  * @swagger
  * /user/all:
@@ -212,7 +173,6 @@
  *         description: ไม่พบผู้ใช้งาน
  */
 
-/* ---------- Get User by ID ---------- */
 /**
  * @swagger
  * /user/getbyiduser/{id}:
@@ -227,7 +187,6 @@
  *         required: true
  *         schema:
  *           type: string
- *         description: ID ของผู้ใช้งาน
  *     responses:
  *       200:
  *         description: ข้อมูลผู้ใช้
@@ -235,7 +194,6 @@
  *         description: ไม่พบผู้ใช้งาน
  */
 
-/* ---------- Update User ---------- */
 /**
  * @swagger
  * /user/updateuser/{id}:
@@ -258,16 +216,11 @@
  *           schema:
  *             type: object
  *             properties:
- *               name:
- *                 type: string
- *               phone:
- *                 type: string
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *               role:
- *                 type: string
+ *               name:     { type: string }
+ *               phone:    { type: string }
+ *               email:    { type: string }
+ *               password: { type: string }
+ *               role:     { type: string }
  *               img:
  *                 type: string
  *                 format: binary
@@ -278,7 +231,6 @@
  *         description: ไม่พบผู้ใช้งาน
  */
 
-/* ---------- Get All Not User ---------- */
 /**
  * @swagger
  * /user/allnotuser:
@@ -292,14 +244,4 @@
  *         description: ข้อมูลผู้ใช้ที่ไม่ใช่ user
  *       500:
  *         description: Server error
- */
-
-/**
- * @swagger
- * components:
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
  */
