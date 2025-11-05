@@ -27,6 +27,7 @@ export const createCheckoutFromDetails = async (req, res) => {
     }
 
     // 2) ว่าง -> สร้าง checkout session (ยังไม่บันทึก DB)
+    //const session = await stripe.checkout.sessions.create({
 const session = await stripe.checkout.sessions.create({
   mode: "payment",
   payment_method_types: ["card"], // ✅ ใช้เฉพาะบัตร
