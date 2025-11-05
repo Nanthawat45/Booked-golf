@@ -32,8 +32,8 @@ const session = await stripe.checkout.sessions.create({
   payment_method_types: ["card"], // ✅ ใช้เฉพาะบัตร
   allow_promotion_codes: false,
   customer_creation: "if_required",
-  success_url: `${process.env.FRONTEND_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-  cancel_url: `${process.env.FRONTEND_URL}/booking`,
+  success_url: `${process.env.FRONTEND_URL}/booking?session_id={CHECKOUT_SESSION_ID}`,
+  cancel_url: `${process.env.FRONTEND_URL}/booking?cancelled=1`,
   line_items: [{
     price_data: {
       currency: "thb",
