@@ -40,6 +40,10 @@ app.use("/api/hole", HoleRoute);
 app.use("/api/caddy", CaddyRoute);
 setupSwagger(app);
 
+app.get("/_ping", (_req, res) => {
+  res.json({ ok: true, ts: new Date().toISOString(), version: process.env.RENDER_GIT_COMMIT || "no-commit" });
+});
+
 app.get("/_routes", (_req, res) => {
   res.json(listEndpoints(app));
 });
