@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
 import { setupSwagger } from "./swagger.js";
 import cookieParser from 'cookie-parser';
 import Stripe from 'stripe';
+import listEndpoints from "express-list-endpoints";
 dotenv.config();
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -38,6 +39,10 @@ app.use("/api/item", ItemRoute);
 app.use("/api/hole", HoleRoute);
 app.use("/api/caddy", CaddyRoute);
 setupSwagger(app);
+
+app.get("/_routes", (_req, res) => {
+  res.json(listEndpoints(app));
+});
 
 app.get("/", (req, res) => {
   res.send("Backend is running PORT 5000");
