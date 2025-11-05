@@ -10,9 +10,10 @@ export const generateToken = (userId, res) => {
 
   res.cookie("jwt", token, {
     httpOnly: true,
-    secure: process.env.NODE_MODE === "production",
-    sameSite: "Lax",
-    maxAge: 24 * 60 * 60 * 1000,
+    secure: true,          // ต้องเป็น true เมื่อใช้ SameSite=None
+    sameSite: "None",      // ✅ อนุญาตข้ามโดเมน (จำเป็นสำหรับ vercel <-> render)
+    path: "/",             // แนะนำให้ระบุชัด
+    maxAge: 24 * 60 * 60 * 1000, // 1 วัน
   });
 };
 
