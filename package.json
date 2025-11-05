@@ -22,7 +22,7 @@
     "express-list-endpoints": "^7.1.1",
     "firebase": "^12.3.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.19.2",
+    "mongoose": "^8.19.3",
     "multer": "^2.0.2",
     "stripe": "^18.5.0",
     "swagger-jsdoc": "^6.2.8",
