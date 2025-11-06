@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
-
+///
 import Stripe from "stripe";
 import mongoose from "mongoose";
 import Booking from "../models/Booking.js";
