@@ -8,7 +8,7 @@ import {
     getByIdHoles,
     reportHelpCar,
     resolveGoCar
-} from "../controllers/hole.Controller.js";
+} from "../controllers/hole.controller.js";
 import { protect, authorizeRoles } from "../middleware/auth.Middleware.js";
 
 const router = express.Router();
